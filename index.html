@@ -200,7 +200,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.3.0";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
 let STATIONS = [];
@@ -373,11 +373,14 @@ function selectStation(station) {
   nowLogo.hidden = false;
   fillLogo(nowLogo, station);
 }
-/* SomaFM verteilt auf mehrere Server: fällt einer aus, wird der nächste probiert */
+/* SomaFM: mehrere Server; Safari spielt deren Shoutcast-Antwort nicht, dort zuerst über den eigenen Worker */
 function streamUrls(station) {
   const m = station.URL.match(/^https:\/\/ice\d*\.somafm\.com(\/.*)$/);
   if (!m) return [station.URL];
-  return [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
+  const direct = [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
+  if (!TITLE_SERVICE) return direct;
+  const proxied = ["ice2", "ice4"].map(h => TITLE_SERVICE + "stream?url=" + encodeURIComponent("https://" + h + ".somafm.com" + m[1]));
+  return isSafari ? [...proxied, ...direct] : [...direct, ...proxied];
 }
 const attempt = { id: null, urls: [], i: 0, timer: 0 };
 function tryStream() {
@@ -421,7 +424,7 @@ function stop() {
 }
 audio.addEventListener("playing", () => {
   clearTimeout(attempt.timer);
-  if (current && attempt.id === current.ID) current.URL = attempt.urls[attempt.i];
+  if (current && attempt.id === current.ID && !attempt.urls[attempt.i].startsWith(TITLE_SERVICE || "-")) current.URL = attempt.urls[attempt.i];
   showSong(); updatePlayButton();
   if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
   if (meta.station !== current.ID) startMeta();
@@ -619,6 +622,7 @@ if ("mediaSession" in navigator) {
 
 /* Lautstärke: iOS lässt Webseiten die Lautstärke nicht ändern – dort Hinweis statt Regler */
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isSafari = isIOS || (/Safari\//.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent));
 const volumeLocked = isIOS || (() => { const a = new Audio(); a.volume = 0.5; return a.volume !== 0.5; })();
 if (volumeLocked) {
   volumeEl.hidden = true; volumeValue.hidden = true;
