@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -31,6 +31,7 @@ body {
   padding-top: env(safe-area-inset-top); min-height: 100dvh;
 }
 button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+[hidden] { display: none !important; }
 header {
   position: sticky; top: 0; z-index: 5; background: var(--bg);
   padding: 10px 16px 8px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
@@ -64,10 +65,10 @@ html[data-theme="dark"] .logo-dark { display: block; }
 }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .count { color: var(--text-2); font-size: 13px; padding: 8px 16px 0; padding-left: max(16px, env(safe-area-inset-left)); }
-main { padding: 4px 0 calc(120px + env(safe-area-inset-bottom)); }
+main { padding: 4px 0 calc(150px + env(safe-area-inset-bottom)); }
 ul { list-style: none; margin: 0; padding: 0; }
 .station {
-  display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 56px;
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px; min-height: 60px;
   padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right));
   border-bottom: 1px solid var(--border); cursor: pointer;
 }
@@ -75,9 +76,17 @@ ul { list-style: none; margin: 0; padding: 0; }
 .station .id { font-family: Consolas, ui-monospace, monospace; color: var(--text-2); font-size: 13px; width: 28px; flex: 0 0 auto; }
 .station .info { flex: 1; min-width: 0; }
 .station .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-.station .genre { font-size: 13px; color: var(--text-2); }
+.station .genre { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .station.playing .name { color: var(--list-text); font-weight: 700; }
+.station.playing .genre.song { color: var(--text); }
 .station.failed .name { color: var(--danger); text-decoration: line-through; }
+.st-logo {
+  width: 40px; height: 40px; border-radius: 9px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden;
+  background: #ffffff; border: 1px solid var(--border);
+}
+.st-logo img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.st-logo.initials { border: 0; color: #ffffff; font-weight: 700; font-size: 14px; letter-spacing: .5px; }
+.player .st-logo { width: 52px; height: 52px; border-radius: 11px; font-size: 17px; }
 .fav { width: 44px; height: 44px; display: grid; place-items: center; color: var(--text-2); flex: 0 0 auto; }
 .fav svg { width: 22px; height: 22px; }
 .fav[aria-pressed="true"] { color: var(--warm); }
@@ -88,6 +97,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 .paused .eq i { animation-play-state: paused; }
 @keyframes eq { 0%,100% { height: 4px; } 50% { height: 16px; } }
 .empty { text-align: center; color: var(--text-2); padding: 40px 20px; }
+.empty button { margin-top: 12px; padding: 10px 18px; border-radius: 10px; background: var(--surface-alt); font-weight: 600; }
 .player {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); box-shadow: var(--shadow);
   border-top: 1px solid var(--border);
@@ -100,6 +110,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 .now .status { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .now .status.err { color: var(--danger); }
 .now .status.ok { color: var(--play); }
+.now .status b { color: var(--text); font-weight: 600; }
 .play-btn {
   width: 52px; height: 52px; border-radius: 50%; background: var(--play); color: #fff; display: grid; place-items: center; flex: 0 0 auto;
 }
@@ -109,7 +120,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 .round svg { width: 22px; height: 22px; }
 .volume { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--text-2); font-size: 13px; }
 .volume input { flex: 1; accent-color: var(--accent); }
-.volume.hidden { display: none; }
+.volume .ios-hint { flex: 1; }
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: none; }
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--surface); border-radius: 16px 16px 0 0;
@@ -143,14 +154,18 @@ ul { list-style: none; margin: 0; padding: 0; }
 </header>
 
 <div class="count" id="count"></div>
-<main><ul id="list"></ul></main>
+<main><ul id="list"><li class="empty">Senderliste wird geladen …</li></ul></main>
 
 <section class="player" aria-label="Wiedergabe">
   <div class="player-row">
+    <span class="st-logo initials" id="nowLogo" hidden></span>
     <div class="now">
       <div class="title" id="nowTitle">Kein Sender gewählt</div>
       <div class="status" id="nowStatus">Tippe auf einen Sender</div>
     </div>
+    <button class="round" id="airplayBtn" aria-label="AirPlay" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><path d="m12 15 5 6H7z"/></svg>
+    </button>
     <button class="round" id="randomBtn" aria-label="Zufallssender">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
     </button>
@@ -162,6 +177,7 @@ ul { list-style: none; margin: 0; padding: 0; }
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
     <input id="volume" type="range" min="0" max="100" value="80" aria-label="Lautstärke">
     <span id="volumeValue">80 %</span>
+    <span class="ios-hint" id="iosHint" hidden>Lautstärke über die Tasten am iPhone</span>
   </div>
 </section>
 
@@ -174,17 +190,17 @@ ul { list-style: none; margin: 0; padding: 0; }
     <button data-theme="dark">Dunkel</button>
   </div>
   <p>Installieren: <b>iPhone</b> – in Safari Teilen → „Zum Home-Bildschirm“. <b>Android</b> – in Chrome Menü ⋮ → „Zum Startbildschirm hinzufügen“ bzw. „App installieren“.</p>
-  <p id="volumeHint" hidden>Die Lautstärke regelst du auf dem iPhone mit den Lautstärketasten.</p>
+  <p>Titelanzeige: Titel und Interpret erscheinen, sobald der Sender sie bereitstellt. Nicht jeder Sender liefert diese Angaben.</p>
+  <p id="volumeHint" hidden>Auf dem iPhone lässt Apple keine Lautstärkeregelung durch Webseiten zu – bitte die Lautstärketasten oder das Kontrollzentrum verwenden.</p>
   <button class="close" id="closeSheet">Schließen</button>
-  <div class="version">Thermofin Jukebox Web 1.0.0 · 125 Sender</div>
+  <div class="version" id="version"></div>
 </section>
 
-<audio id="audio" preload="none"></audio>
+<audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-/* Eingebaute Liste als Rückfall; aktuell wird radiostation.json aus demselben Ordner geladen */
-const EMBEDDED_STATIONS = [{"ID": "01","Name": "Oldie Antenne Fetenhits","Genre": "Oldies","URL": "https://stream.oldie-antenne.de/oldie-antenne-fetenhits/stream/mp3"},{"ID": "02","Name": "Oldie Antenne 90er Hits","Genre": "90er","URL": "https://stream.oldie-antenne.de/oldie-antenne-90er-hits/stream/mp3"},{"ID": "03","Name": "Oldie Antenne 80er Hits","Genre": "80er","URL": "https://stream.oldie-antenne.de/oldie-antenne-80er-hits/stream/mp3"},{"ID": "04","Name": "Oldie Antenne NDW","Genre": "80er","URL": "https://stream.oldie-antenne.de/oldie-antenne-ndw/stream/mp3"},{"ID": "05","Name": "Oldie Antenne Rock Classics","Genre": "Rock","URL": "https://stream.oldie-antenne.de/oldie-antenne-rock-classics/stream/mp3"},{"ID": "06","Name": "Radio Bob","Genre": "Rock","URL": "https://streams.radiobob.de/bob-national/mp3-192/streams.radiobob.de/"},{"ID": "07","Name": "Rock Antenne","Genre": "Rock","URL": "https://stream.rockantenne.de/rockantenne/stream/mp3"},{"ID": "08","Name": "80s80s Live","Genre": "80er","URL": "https://regiocast.streamabc.net/regc-80s80smweb2517500-mp3-128-7712602?sABC"},{"ID": "09","Name": "Radio Zwickau Live","Genre": "Pop","URL": "https://web.radio.radiozwickau.de/radiozwickau-live/stream/mp3?aggregator=direktlink"},{"ID": "10","Name": "Radio Zwickau 80er Kulthits","Genre": "80er","URL": "https://web.radio.radiozwickau.de/radiozwickau-80er/stream/mp3?aggregator=direktlink"},{"ID": "11","Name": "Radio Zwickau 90er XXL","Genre": "90er","URL": "https://web.radio.radiozwickau.de/radiozwickau-90er/stream/mp3?aggregator=direktlink"},{"ID": "12","Name": "Radio Zwickau TopHits","Genre": "Pop","URL": "https://web.radio.radiozwickau.de/radiozwickau-tophits/stream/mp3?aggregator=direktlink"},{"ID": "13","Name": "MDR Jump","Genre": "Pop","URL": "https://mdr-284320-0.cast.mdr.de/mdr/284320/0/mp3/high/stream.mp3"},{"ID": "15","Name": "90s90s Live","Genre": "90er","URL": "https://streams.90s90s.de/main/mp3-128"},{"ID": "16","Name": "Radio Top 40","Genre": "Pop","URL": "https://frontend.streamonkey.net/antthue-radiotop40/stream/mp3"},{"ID": "17","Name": "Radio Hazzard of Darkness","Genre": "Gothic","URL": "https://radio-hazzardofdarkness.de/stream"},{"ID": "18","Name": "Schwarzlauscher","Genre": "Gothic","URL": "https://stream.laut.fm/schwarzlauscher"},{"ID": "19","Name": "DarkClubRadio","Genre": "Gothic","URL": "https://stream.laut.fm/darkclubradio"},{"ID": "20","Name": "Radio Schwarze Welle","Genre": "Gothic","URL": "https://stream.laut.fm/schwarzewelle"},{"ID": "21","Name": "Rock FM","Genre": "Rock","URL": "https://stream.regenbogen2.de/dab/mp3-128/private"},{"ID": "22","Name": "RTL - In the Mix","Genre": "Dance","URL": "https://stream.89.0rtl.de/mix/mp3-128"},{"ID": "23","Name": "Hit Radio FFH","Genre": "Rock","URL": "https://mp3.ffh.de/ffhchannels/hqrock.mp3"},{"ID": "24","Name": "Oldies Pop Rock","Genre": "Oldies","URL": "https://stream.laut.fm/0-24_oldies_pop_rock"},{"ID": "25","Name": "Star FM","Genre": "Rock","URL": "https://stream.starfm.de/sachsen/mp3-192/stream.starfm.de/"},{"ID": "26","Name": "Radio 21","Genre": "Rock","URL": "https://streams.radio21.de/radio21/mp3-192/streams.radio21.de/"},{"ID": "27","Name": "SWR3","Genre": "Pop","URL": "https://liveradio.swr.de/sw282p3/swr3/play.mp3"},{"ID": "28","Name": "1LIVE","Genre": "Pop","URL": "https://wdr-1live-live.icecastssl.wdr.de/wdr/1live/live/mp3/128/stream.mp3"},{"ID": "29","Name": "Bayern 3","Genre": "Pop","URL": "https://dispatcher.rndfnk.com/br/br3/live/mp3/mid"},{"ID": "30","Name": "Antenne Bayern","Genre": "Pop","URL": "https://stream.antenne.de/antenne/stream/mp3"},{"ID": "31","Name": "Radio Swiss Pop","Genre": "Pop","URL": "https://stream.srg-ssr.ch/m/rsp/mp3_128"},{"ID": "32","Name": "Radio Bob Hardrock","Genre": "Rock","URL": "https://streams.radiobob.de/bob-hardrock/mp3-192/mediaplayer"},{"ID": "33","Name": "Radio Bob AC/DC","Genre": "Rock","URL": "https://streams.radiobob.de/bob-acdc/mp3-192/mediaplayer"},{"ID": "34","Name": "Rock Antenne Alternative","Genre": "Rock","URL": "https://stream.rockantenne.de/alternative/stream/mp3"},{"ID": "35","Name": "Radio Bob Metal","Genre": "Metal","URL": "https://streams.radiobob.de/bob-metal/mp3-192/mediaplayer"},{"ID": "36","Name": "Rock Antenne Heavy Metal","Genre": "Metal","URL": "https://stream.rockantenne.de/heavy-metal/stream/mp3"},{"ID": "37","Name": "WDR 4","Genre": "Oldies","URL": "https://wdr-wdr4-live.icecastssl.wdr.de/wdr/wdr4/live/mp3/128/stream.mp3"},{"ID": "38","Name": "sunshine live","Genre": "Dance","URL": "https://stream.sunshine-live.de/live/mp3-192"},{"ID": "39","Name": "Radio Swiss Jazz","Genre": "Jazz","URL": "https://stream.srg-ssr.ch/m/rsj/mp3_128"},{"ID": "40","Name": "SomaFM Sonic Universe","Genre": "Jazz","URL": "https://ice1.somafm.com/sonicuniverse-128-mp3"},{"ID": "41","Name": "Radio Swiss Classic","Genre": "Klassik","URL": "https://stream.srg-ssr.ch/m/rsc_de/mp3_128"},{"ID": "42","Name": "BR-Klassik","Genre": "Klassik","URL": "https://dispatcher.rndfnk.com/br/brklassik/live/mp3/mid"},{"ID": "43","Name": "Radio Paloma","Genre": "Schlager","URL": "https://pool.radiopaloma.de/RADIOPALOMA.mp3"},{"ID": "44","Name": "SomaFM Groove Salad","Genre": "Chillout","URL": "https://ice1.somafm.com/groovesalad-128-mp3"},{"ID": "45","Name": "Rock Antenne Classic Perlen","Genre": "Rock","URL": "https://stream.rockantenne.de/classic-perlen/stream/mp3"},{"ID": "46","Name": "Rock Antenne Punkrock","Genre": "Rock","URL": "https://stream.rockantenne.de/punkrock/stream/mp3"},{"ID": "47","Name": "Rock Antenne Grunge","Genre": "Rock","URL": "https://stream.rockantenne.de/grunge/stream/mp3"},{"ID": "48","Name": "Rock Antenne 80er Rock","Genre": "80er","URL": "https://stream.rockantenne.de/80er-rock/stream/mp3"},{"ID": "49","Name": "Rock Antenne 90er Rock","Genre": "90er","URL": "https://stream.rockantenne.de/90er-rock/stream/mp3"},{"ID": "50","Name": "Rock Antenne Blues Rock","Genre": "Rock","URL": "https://stream.rockantenne.de/blues-rock/stream/mp3"},{"ID": "52","Name": "Rock Antenne Hair Metal","Genre": "Metal","URL": "https://stream.rockantenne.de/hair-metal/stream/mp3"},{"ID": "53","Name": "Radio Bob 80er Rock","Genre": "80er","URL": "https://streams.radiobob.de/bob-80srock/mp3-128/streams.radiobob.de/"},{"ID": "54","Name": "Radio Bob 90er Rock","Genre": "90er","URL": "https://streams.radiobob.de/bob-90srock/mp3-128/streams.radiobob.de/"},{"ID": "55","Name": "Radio Bob Alternative","Genre": "Rock","URL": "https://streams.radiobob.de/bob-alternative/mp3-128/streams.radiobob.de/"},{"ID": "56","Name": "Radio Bob Classic Rock","Genre": "Rock","URL": "https://streams.radiobob.de/bob-classicrock/mp3-128/streams.radiobob.de/"},{"ID": "57","Name": "Radio Bob Punk","Genre": "Rock","URL": "https://streams.radiobob.de/bob-punk/mp3-128/streams.radiobob.de/"},{"ID": "58","Name": "Radio Bob Grunge","Genre": "Rock","URL": "https://streams.radiobob.de/bob-grunge/mp3-128/streams.radiobob.de/"},{"ID": "59","Name": "Radio Bob Deutschrock","Genre": "Rock","URL": "https://streams.radiobob.de/bob-deutsch/mp3-128/streams.radiobob.de/"},{"ID": "60","Name": "Wacken Radio by Radio Bob","Genre": "Metal","URL": "https://streams.radiobob.de/bob-wacken/mp3-128/streams.radiobob.de/"},{"ID": "61","Name": "Antenne Bayern 80er Kulthits","Genre": "80er","URL": "https://stream.antenne.de/80er-kulthits/stream/mp3"},{"ID": "62","Name": "Antenne Bayern 90er Hits","Genre": "90er","URL": "https://stream.antenne.de/90er-hits/stream/mp3"},{"ID": "63","Name": "Antenne Bayern Top 40","Genre": "Pop","URL": "https://stream.antenne.de/top-40/stream/mp3"},{"ID": "64","Name": "Antenne Bayern Chillout","Genre": "Chillout","URL": "https://stream.antenne.de/chillout/stream/mp3"},{"ID": "65","Name": "Antenne Bayern Classic Rock Live","Genre": "Rock","URL": "https://stream.antenne.de/classic-rock-live/stream/mp3"},{"ID": "66","Name": "Antenne Bayern Schlagersahne","Genre": "Schlager","URL": "https://stream.antenne.de/das-schlager-karussell/stream/mp3"},{"ID": "67","Name": "Antenne Bayern Oldies but Goldies","Genre": "Oldies","URL": "https://stream.antenne.de/oldies-but-goldies/stream/mp3"},{"ID": "68","Name": "SomaFM Secret Agent","Genre": "Chillout","URL": "https://ice1.somafm.com/secretagent-128-mp3"},{"ID": "69","Name": "SomaFM Drone Zone","Genre": "Chillout","URL": "https://ice1.somafm.com/dronezone-128-mp3"},{"ID": "70","Name": "SomaFM Lush","Genre": "Chillout","URL": "https://ice1.somafm.com/lush-128-mp3"},{"ID": "71","Name": "SomaFM Indie Pop Rocks","Genre": "Indie","URL": "https://ice1.somafm.com/indiepop-128-mp3"},{"ID": "72","Name": "SomaFM Underground 80s","Genre": "80er","URL": "https://ice1.somafm.com/u80s-128-mp3"},{"ID": "73","Name": "SomaFM Left Coast 70s","Genre": "Oldies","URL": "https://ice1.somafm.com/seventies-128-mp3"},{"ID": "74","Name": "SomaFM Boot Liquor","Genre": "Country","URL": "https://ice1.somafm.com/bootliquor-128-mp3"},{"ID": "75","Name": "SomaFM DEF CON Radio","Genre": "Dance","URL": "https://ice1.somafm.com/defcon-128-mp3"},{"ID": "76","Name": "SomaFM Beat Blender","Genre": "Dance","URL": "https://ice1.somafm.com/beatblender-128-mp3"},{"ID": "77","Name": "SomaFM Metal Detector","Genre": "Metal","URL": "https://ice1.somafm.com/metal-128-mp3"},{"ID": "78","Name": "SomaFM Fluid","Genre": "Hip-Hop","URL": "https://ice1.somafm.com/fluid-128-mp3"},{"ID": "79","Name": "SomaFM Folk Forward","Genre": "Folk","URL": "https://ice1.somafm.com/folkfwd-128-mp3"},{"ID": "80","Name": "NDR 2","Genre": "Pop","URL": "https://icecast.ndr.de/ndr/ndr2/niedersachsen/mp3/128/stream.mp3"},{"ID": "81","Name": "N-JOY","Genre": "Pop","URL": "https://icecast.ndr.de/ndr/njoy/live/mp3/128/stream.mp3"},{"ID": "82","Name": "WDR 2","Genre": "Pop","URL": "https://wdr-wdr2-rheinland.icecastssl.wdr.de/wdr/wdr2/rheinland/mp3/128/stream.mp3"},{"ID": "83","Name": "WDR 3","Genre": "Klassik","URL": "https://wdr-wdr3-live.icecastssl.wdr.de/wdr/wdr3/live/mp3/256/stream.mp3"},{"ID": "84","Name": "WDR COSMO","Genre": "Pop","URL": "https://wdr-cosmo-live.icecastssl.wdr.de/wdr/cosmo/live/mp3/128/stream.mp3"},{"ID": "85","Name": "hr3","Genre": "Pop","URL": "https://dispatcher.rndfnk.com/hr/hr3/live/mp3/high"},{"ID": "86","Name": "YOU FM","Genre": "Pop","URL": "https://dispatcher.rndfnk.com/hr/youfm/live/mp3/high"},{"ID": "87","Name": "Fritz","Genre": "Indie","URL": "https://dispatcher.rndfnk.com/rbb/fritz/live/mp3/mid"},{"ID": "88","Name": "radioeins","Genre": "Indie","URL": "https://dispatcher.rndfnk.com/rbb/radioeins/live/mp3/mid"},{"ID": "89","Name": "Bayern 1","Genre": "Oldies","URL": "https://dispatcher.rndfnk.com/br/br1/obb/mp3/mid"},{"ID": "92","Name": "DASDING","Genre": "Pop","URL": "https://liveradio.swr.de/sw282p3/dasding/play.mp3"},{"ID": "93","Name": "SRF 3","Genre": "Pop","URL": "https://stream.srg-ssr.ch/m/drs3/mp3_128"},{"ID": "94","Name": "egoFM","Genre": "Indie","URL": "https://streams.egofm.de/egoFM-hq"},{"ID": "95","Name": "Antenne Thüringen","Genre": "Pop","URL": "https://stream.antennethueringen.de/live/mp3-128/"},{"ID": "97","Name": "104.6 RTL","Genre": "Pop","URL": "https://stream.104.6rtl.com/rtl-live/mp3-128"},{"ID": "98","Name": "Antenne MV","Genre": "Pop","URL": "https://streams.antennemv.de/antennemv-live/mp3-192/amv"},{"ID": "99","Name": "Radio Bob Hessen","Genre": "Rock","URL": "https://streams.radiobob.de/bob-live/mp3-192/streams.radiobob.de/"},{"ID": "100","Name": "Radio Blitz","Genre": "Rock","URL": "https://stream.laut.fm/blitzfm"},{"ID": "101","Name": "SWR1 Baden-Württemberg","Genre": "Pop","URL": "https://liveradio.swr.de/sw282p3/swr1bw/play.mp3"},{"ID": "102","Name": "hr1","Genre": "Oldies","URL": "https://dispatcher.rndfnk.com/hr/hr1/live/mp3/high"},{"ID": "103","Name": "BR Heimat","Genre": "Schlager","URL": "https://dispatcher.rndfnk.com/br/brheimat/live/mp3/mid"},{"ID": "104","Name": "Couleur 3","Genre": "Indie","URL": "https://stream.srg-ssr.ch/m/couleur3/mp3_128"},{"ID": "105","Name": "SRF Virus","Genre": "Indie","URL": "https://stream.srg-ssr.ch/m/drsvirus/mp3_128"},{"ID": "106","Name": "SomaFM Deep Space One","Genre": "Chillout","URL": "https://ice1.somafm.com/deepspaceone-128-mp3"},{"ID": "107","Name": "SomaFM Space Station Soma","Genre": "Dance","URL": "https://ice1.somafm.com/spacestation-128-mp3"},{"ID": "108","Name": "SomaFM PopTron","Genre": "Pop","URL": "https://ice1.somafm.com/poptron-128-mp3"},{"ID": "109","Name": "SomaFM The Trip","Genre": "Dance","URL": "https://ice1.somafm.com/thetrip-128-mp3"},{"ID": "110","Name": "SomaFM Suburbs of Goa","Genre": "Chillout","URL": "https://ice1.somafm.com/suburbsofgoa-128-mp3"},{"ID": "111","Name": "SomaFM Illinois Street Lounge","Genre": "Jazz","URL": "https://ice1.somafm.com/illstreet-128-mp3"},{"ID": "113","Name": "SomaFM Covers","Genre": "Pop","URL": "https://ice1.somafm.com/covers-128-mp3"},{"ID": "114","Name": "SomaFM Digitalis","Genre": "Indie","URL": "https://ice1.somafm.com/digitalis-128-mp3"},{"ID": "115","Name": "SomaFM Doomed","Genre": "Gothic","URL": "https://ice1.somafm.com/doomed-128-mp3"},{"ID": "116","Name": "SomaFM Dub Step Beyond","Genre": "Dance","URL": "https://ice1.somafm.com/dubstep-128-mp3"},{"ID": "117","Name": "SomaFM Heavyweight Reggae","Genre": "Reggae","URL": "https://ice1.somafm.com/reggae-128-mp3"},{"ID": "118","Name": "TechnoBase.FM","Genre": "Techno","URL": "https://listen.technobase.fm/tunein-mp3"},{"ID": "119","Name": "HouseTime.FM","Genre": "Dance","URL": "https://listen.housetime.fm/tunein-mp3"},{"ID": "120","Name": "HardBase.FM","Genre": "Techno","URL": "https://listen.hardbase.fm/tunein-mp3"},{"ID": "121","Name": "TranceBase.FM","Genre": "Techno","URL": "https://listen.trancebase.fm/tunein-mp3"},{"ID": "124","Name": "I Love Radio","Genre": "Pop","URL": "https://streams.ilovemusic.de/iloveradio1.mp3"},{"ID": "125","Name": "I Love 2 Dance","Genre": "Dance","URL": "https://streams.ilovemusic.de/iloveradio2.mp3"},{"ID": "126","Name": "I Love Top 100 Charts","Genre": "Pop","URL": "https://streams.ilovemusic.de/iloveradio9.mp3"},{"ID": "127","Name": "sunshine live Techno","Genre": "Techno","URL": "https://stream.sunshine-live.de/techno/mp3-192"},{"ID": "128","Name": "sunshine live Eurodance","Genre": "Dance","URL": "https://stream.sunshine-live.de/eurodance/mp3-192"},{"ID": "129","Name": "sunshine live Ibiza","Genre": "Dance","URL": "https://stream.sunshine-live.de/ibiza/mp3-192"},{"ID": "130","Name": "sunshine live Charts","Genre": "Dance","URL": "https://stream.sunshine-live.de/charts/mp3-192"},{"ID": "131","Name": "SomaFM Seven Inch Soul","Genre": "Oldies","URL": "https://ice1.somafm.com/7soul-128-mp3"},{"ID": "132","Name": "SomaFM Synphaera","Genre": "Chillout","URL": "https://ice1.somafm.com/synphaera-128-mp3"},{"ID": "133","Name": "SomaFM ThistleRadio","Genre": "Folk","URL": "https://ice1.somafm.com/thistle-128-mp3"}];
-let STATIONS = EMBEDDED_STATIONS;
+const APP_VERSION = "1.1.0";
+let STATIONS = [];
 
 /* Browser erlauben auf https-Seiten nur https-Streams: http-Adressen werden umgestellt */
 function normalizeUrl(url) {
@@ -197,10 +213,9 @@ function normalizeUrl(url) {
 function normalizeStations(list) {
   return list
     .filter(s => s && s.ID && s.Name && s.URL && !isNaN(parseInt(s.ID, 10)))
-    .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)) }))
+    .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "" }))
     .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10));
 }
-STATIONS = normalizeStations(STATIONS);
 
 const STORE = {
   get(key, fallback) { try { const v = localStorage.getItem("jukebox." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
@@ -208,17 +223,10 @@ const STORE = {
 };
 
 const ALL = "Alle", FAVS = "★ Favoriten";
-const audio = document.getElementById("audio");
-const listEl = document.getElementById("list");
-const chipsEl = document.getElementById("chips");
-const searchEl = document.getElementById("search");
-const countEl = document.getElementById("count");
-const playBtn = document.getElementById("playBtn");
-const playIcon = document.getElementById("playIcon");
-const nowTitle = document.getElementById("nowTitle");
-const nowStatus = document.getElementById("nowStatus");
-const volumeEl = document.getElementById("volume");
-const volumeValue = document.getElementById("volumeValue");
+const $ = id => document.getElementById(id);
+const audio = $("audio"), listEl = $("list"), chipsEl = $("chips"), searchEl = $("search"), countEl = $("count");
+const playBtn = $("playBtn"), playIcon = $("playIcon"), nowTitle = $("nowTitle"), nowStatus = $("nowStatus"), nowLogo = $("nowLogo");
+const volumeEl = $("volume"), volumeValue = $("volumeValue");
 
 let genre = STORE.get("genre", ALL);
 let favorites = new Set(STORE.get("favorites", []));
@@ -239,6 +247,54 @@ document.querySelectorAll("#themeSeg button").forEach(b => b.addEventListener("c
   themeMode = b.dataset.theme; STORE.set("theme", themeMode); applyTheme();
 }));
 applyTheme();
+
+/* Sender-Logos: "Logo" aus radiostation.json, SomaFM-Kanallogo oder Favicon der Sender-Webseite */
+const SITE_RULES = [
+  [/regc-80s80s/, "80s80s.de"], [/mdr\.de\/mdr\/284320\//, "jumpradio.de"], [/radiotop40/, "radiotop40.de"],
+  [/swr\.de\/.*\/swr3\//, "swr3.de"], [/swr\.de\/.*\/dasding\//, "dasding.de"], [/swr\.de\/.*\/swr1bw\//, "swr1.de"],
+  [/\/wdr\/1live\//, "1live.de"], [/\/wdr\/wdr2\//, "wdr2.de"], [/\/wdr\/wdr3\//, "wdr3.de"], [/\/wdr\/wdr4\//, "wdr4.de"], [/\/wdr\/cosmo\//, "wdr.de"],
+  [/\/br\/br1\//, "bayern1.de"], [/\/br\/br3\//, "bayern3.de"], [/\/br\/brklassik\//, "br-klassik.de"], [/\/br\/brheimat\//, "br.de"],
+  [/\/hr\/hr1\//, "hr1.de"], [/\/hr\/hr3\//, "hr3.de"], [/\/hr\/youfm\//, "you-fm.de"],
+  [/\/rbb\/fritz\//, "fritz.de"], [/\/rbb\/radioeins\//, "radioeins.de"],
+  [/\/ndr\/ndr2\//, "ndr.de"], [/\/ndr\/njoy\//, "n-joy.de"],
+  [/\/m\/rsp\//, "radioswisspop.ch"], [/\/m\/rsj\//, "radioswissjazz.ch"], [/\/m\/rsc_de\//, "radioswissclassic.ch"],
+  [/\/m\/(drs3|drsvirus)\//, "srf.ch"], [/\/m\/couleur3\//, "couleur3.ch"],
+  [/ilovemusic\.de/, "iloveradio.de"], [/104\.6rtl\.com/, "104.6rtl.com"], [/89\.0rtl\.de/, "89.0rtl.de"]
+];
+const somaChannel = url => (url.match(/somafm\.com\/([a-z0-9]+?)-\d+-mp3/i) || [])[1];
+function logoUrl(s) {
+  if (s.Logo) return s.Logo;
+  const soma = somaChannel(s.URL);
+  if (soma) return "https://api.somafm.com/logos/256/" + soma + "256.png";
+  const rule = SITE_RULES.find(r => r[0].test(s.URL));
+  const site = rule ? rule[1] : new URL(s.URL).hostname.split(".").slice(-2).join(".");
+  return "https://www.google.com/s2/favicons?domain=" + site + "&sz=128";
+}
+const logoOk = new Map();
+function initials(name) {
+  const words = name.replace(/^(Radio|SomaFM)\s+/i, "").split(/[\s\-–/]+/).filter(Boolean);
+  return ((words[0] || "?")[0] + (words[1] ? words[1][0] : (words[0] || "")[1] || "")).toUpperCase();
+}
+function showInitials(box, s) {
+  let h = 0; for (const c of s.Name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  box.classList.add("initials");
+  box.style.background = "hsl(" + (h % 360) + " 45% 42%)";
+  box.textContent = initials(s.Name);
+}
+function fillLogo(box, s) {
+  box.replaceChildren(); box.style.background = ""; box.classList.remove("initials");
+  if (logoOk.get(s.ID) === false) { showInitials(box, s); return; }
+  const img = new Image();
+  img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
+  img.onload = () => {
+    if (img.naturalWidth <= 16) { logoOk.set(s.ID, false); showInitials(box, s); return; }
+    logoOk.set(s.ID, true);
+    if (current && current.ID === s.ID) updateMediaSession();
+  };
+  img.onerror = () => { logoOk.set(s.ID, false); showInitials(box, s); };
+  img.src = logoUrl(s);
+  box.appendChild(img);
+}
 
 /* Genre-Chips */
 function renderChips() {
@@ -271,9 +327,11 @@ function renderList() {
   }
   for (const s of visible) {
     const li = document.createElement("li");
+    li.dataset.id = s.ID;
     li.className = "station" + (current && current.ID === s.ID ? " playing" : "") + (failed.has(s.ID) ? " failed" : "") + (audio.paused ? " paused" : "");
-    li.innerHTML = '<span class="id"></span><div class="info"><div class="name"></div><div class="genre"></div></div><span class="eq"><i></i><i></i><i></i></span><button class="fav"></button>';
+    li.innerHTML = '<span class="id"></span><span class="st-logo"></span><div class="info"><div class="name"></div><div class="genre"></div></div><span class="eq"><i></i><i></i><i></i></span><button class="fav"></button>';
     li.querySelector(".id").textContent = s.ID;
+    fillLogo(li.querySelector(".st-logo"), s);
     li.querySelector(".name").textContent = s.Name;
     li.querySelector(".genre").textContent = s.Genre;
     const fav = li.querySelector(".fav");
@@ -291,6 +349,7 @@ function renderList() {
     listEl.appendChild(li);
   }
   countEl.textContent = visible.length + " von " + STATIONS.length + " Sendern";
+  showSong();
 }
 
 /* Wiedergabe */
@@ -305,11 +364,17 @@ function updatePlayButton() {
   playBtn.disabled = !current;
   document.querySelectorAll(".station").forEach(li => li.classList.toggle("paused", !playing));
 }
-function play(station) {
+function selectStation(station) {
   current = station;
+  nowTitle.textContent = station.Name;
+  nowLogo.hidden = false;
+  fillLogo(nowLogo, station);
+}
+function play(station) {
+  if (!current || current.ID !== station.ID) stopMeta();
+  selectStation(station);
   failed.delete(station.ID);
   STORE.set("last", station.ID);
-  nowTitle.textContent = station.Name;
   setStatus("Verbinde …");
   audio.src = station.URL;
   const result = audio.play();
@@ -319,17 +384,23 @@ function play(station) {
   updatePlayButton();
 }
 function stop() {
+  stopMeta();
   audio.pause();
   audio.removeAttribute("src");
   audio.load();
   setStatus("Gestoppt");
   updatePlayButton();
 }
-audio.addEventListener("playing", () => { setStatus("Läuft", "ok"); updatePlayButton(); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; });
+audio.addEventListener("playing", () => {
+  showSong(); updatePlayButton();
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+  if (meta.station !== current.ID) startMeta();
+});
 audio.addEventListener("waiting", () => setStatus("Puffert …"));
 audio.addEventListener("pause", () => { updatePlayButton(); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; });
 audio.addEventListener("error", () => {
   if (!current || !audio.getAttribute("src")) return;
+  stopMeta();
   failed.add(current.ID);
   setStatus("Sender nicht erreichbar", "err");
   renderList();
@@ -340,23 +411,158 @@ playBtn.addEventListener("click", () => {
   if (!current) return;
   if (audio.paused) play(current); else stop();
 });
-document.getElementById("randomBtn").addEventListener("click", () => {
+$("randomBtn").addEventListener("click", () => {
   const pool = visible.length ? visible : STATIONS;
-  play(pool[Math.floor(Math.random() * pool.length)]);
+  if (pool.length) play(pool[Math.floor(Math.random() * pool.length)]);
 });
 function step(dir) {
   const pool = visible.length ? visible : STATIONS;
+  if (!pool.length) return;
   const i = current ? pool.findIndex(s => s.ID === current.ID) : -1;
   play(pool[(i + dir + pool.length) % pool.length]);
 }
 
+/* Aktueller Titel: Sender-API (laut.fm, SomaFM), Icecast-Status oder ICY-Daten im Stream */
+function splitTitle(text) {
+  text = String(text || "").replace(/\0+$/, "").trim();
+  if (!text || /^[-–\s]*$/.test(text)) return null;
+  const i = text.indexOf(" - ");
+  return i > 0 ? { artist: text.slice(0, i).trim(), title: text.slice(i + 3).trim() } : { artist: "", title: text };
+}
+function cleanSong(song, station) {
+  if (!song || !song.title) return null;
+  const name = station.Name.toLowerCase();
+  if (song.title.toLowerCase() === name && !song.artist) return null;
+  return song;
+}
+function decodeMeta(bytes) {
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return new TextDecoder("windows-1252").decode(bytes); }
+}
+/* Liest aus dem Stream bis zum ersten Metadatenblock und bricht dann ab (wenige KB statt Dauer-Download) */
+async function readIcyTitle(reader, metaint) {
+  let skip = metaint, need = -1, got = 0, total = 0, block = null;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) throw new Error("Stream-Ende");
+    if ((total += value.length) > 4 * metaint + 65536) throw new Error("Keine Metadaten");
+    let i = 0;
+    while (i < value.length) {
+      if (skip > 0) { const n = Math.min(skip, value.length - i); skip -= n; i += n; continue; }
+      if (need < 0) {
+        need = value[i++] * 16;
+        if (need === 0) { need = -1; skip = metaint; }
+        else { block = new Uint8Array(need); got = 0; }
+        continue;
+      }
+      const n = Math.min(need - got, value.length - i);
+      block.set(value.subarray(i, i + n), got); got += n; i += n;
+      if (got === need) {
+        const m = decodeMeta(block).match(/StreamTitle='([\s\S]*?)';/);
+        return m ? splitTitle(m[1]) : null;
+      }
+    }
+  }
+}
+const metaProviders = s => {
+  const u = new URL(s.URL), list = [], soma = somaChannel(s.URL);
+  if (u.hostname === "stream.laut.fm") list.push(async signal => {
+    const r = await fetch("https://api.laut.fm/station/" + u.pathname.slice(1) + "/current_song", { signal, cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    return j && j.title ? { title: String(j.title).trim(), artist: j.artist && j.artist.name ? String(j.artist.name).trim() : "" } : null;
+  });
+  if (soma) list.push(async signal => {
+    const r = await fetch("https://api.somafm.com/songs/" + soma + ".json", { signal, cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const song = ((await r.json()).songs || [])[0];
+    return song && song.title ? { title: String(song.title).trim(), artist: String(song.artist || "").trim() } : null;
+  });
+  list.push(async signal => {
+    const r = await fetch(u.origin + "/status-json.xsl", { signal, cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    let src = ((await r.json()).icestats || {}).source;
+    src = [].concat(src || []).find(x => x.listenurl && new URL(x.listenurl).pathname === u.pathname);
+    if (!src) throw new Error("Mount fehlt");
+    if (src.artist && src.title) return { artist: String(src.artist).trim(), title: String(src.title).trim() };
+    return splitTitle(src.title || src.yp_currently_playing);
+  });
+  list.push(async signal => {
+    const r = await fetch(s.URL, { signal, cache: "no-store", headers: { "Icy-MetaData": "1" } });
+    const metaint = parseInt(r.headers.get("icy-metaint"), 10);
+    if (!r.ok || !r.body || !(metaint > 0)) { if (r.body) r.body.cancel().catch(() => {}); throw new Error("Kein ICY"); }
+    const reader = r.body.getReader();
+    try { return await readIcyTitle(reader, metaint); } finally { reader.cancel().catch(() => {}); }
+  });
+  return list;
+};
+const meta = { gen: 0, station: null, timer: 0, ctrl: null, song: null, info: new Map() };
+function stopMeta() {
+  meta.gen++; meta.station = null; meta.song = null;
+  clearTimeout(meta.timer);
+  if (meta.ctrl) meta.ctrl.abort();
+  document.title = "Thermofin Jukebox";
+}
+function startMeta() {
+  stopMeta();
+  const gen = meta.gen, st = current, providers = metaProviders(st);
+  meta.station = st.ID;
+  if (!meta.info.has(st.ID)) meta.info.set(st.ID, { good: -1, fails: 0, dead: new Set() });
+  const info = meta.info.get(st.ID);
+  const run = async () => {
+    const order = info.good >= 0 ? [info.good] : providers.map((_, i) => i).filter(i => !info.dead.has(i));
+    if (!order.length) return;
+    for (const i of order) {
+      const ctrl = meta.ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 12000);
+      try {
+        const song = cleanSong(await providers[i](ctrl.signal), st);
+        if (gen !== meta.gen) return;
+        info.good = i; info.fails = 0;
+        setSong(song);
+        break;
+      } catch {
+        if (gen !== meta.gen) return;
+        if (info.good === i) { if (++info.fails >= 3) { info.good = -1; info.dead.clear(); } }
+        else info.dead.add(i);
+      } finally { clearTimeout(t); }
+    }
+    if (gen === meta.gen && (info.good >= 0 || info.dead.size < providers.length)) meta.timer = setTimeout(run, 25000);
+  };
+  run();
+}
+const songText = song => song.title + (song.artist ? " – " + song.artist : "");
+function setSong(song) {
+  const old = meta.song ? songText(meta.song) : "", now = song ? songText(song) : "";
+  meta.song = song;
+  if (old === now) return;
+  showSong();
+  updateMediaSession();
+}
+function showSong() {
+  const song = current && !audio.paused && meta.station === current.ID ? meta.song : null;
+  if (current && !audio.paused && audio.readyState > 2) {
+    if (song) { nowStatus.className = "status ok"; nowStatus.textContent = "Läuft: "; const b = document.createElement("b"); b.textContent = songText(song); nowStatus.appendChild(b); }
+    else setStatus("Läuft", "ok");
+  }
+  document.querySelectorAll(".station .genre.song").forEach(el => {
+    const s = STATIONS.find(x => x.ID === el.closest(".station").dataset.id);
+    el.classList.remove("song"); el.textContent = s ? s.Genre : "";
+  });
+  if (song) {
+    const li = listEl.querySelector('.station[data-id="' + CSS.escape(current.ID) + '"] .genre');
+    if (li) { li.classList.add("song"); li.textContent = "♪ " + songText(song); }
+  }
+  document.title = song ? songText(song) + " · Jukebox" : "Thermofin Jukebox";
+}
+
 /* Sperrbildschirm / Benachrichtigung */
+const APP_ART = [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }, { src: "icon-512.png", sizes: "512x512", type: "image/png" }];
 function updateMediaSession() {
   if (!("mediaSession" in navigator) || !current) return;
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: current.Name, artist: "Thermofin Jukebox", album: current.Genre,
-    artwork: [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }, { src: "icon-512.png", sizes: "512x512", type: "image/png" }]
-  });
+  const song = meta.station === current.ID ? meta.song : null;
+  const artwork = logoOk.get(current.ID) === true ? [{ src: logoUrl(current), sizes: "256x256" }] : APP_ART;
+  navigator.mediaSession.metadata = new MediaMetadata(song
+    ? { title: song.title, artist: song.artist || current.Name, album: current.Name, artwork }
+    : { title: current.Name, artist: "Thermofin Jukebox", album: current.Genre, artwork });
 }
 if ("mediaSession" in navigator) {
   const set = (a, h) => { try { navigator.mediaSession.setActionHandler(a, h); } catch {} };
@@ -367,48 +573,59 @@ if ("mediaSession" in navigator) {
   set("previoustrack", () => step(-1));
 }
 
-/* Lautstärke (iOS erlaubt das nicht – dort ausblenden) */
-const iosVolumeLocked = (() => { const a = new Audio(); a.volume = 0.5; return a.volume !== 0.5; })();
-if (iosVolumeLocked) {
-  document.getElementById("volumeRow").classList.add("hidden");
-  document.getElementById("volumeHint").hidden = false;
+/* Lautstärke: iOS lässt Webseiten die Lautstärke nicht ändern – dort Hinweis statt Regler */
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const volumeLocked = isIOS || (() => { const a = new Audio(); a.volume = 0.5; return a.volume !== 0.5; })();
+if (volumeLocked) {
+  volumeEl.hidden = true; volumeValue.hidden = true;
+  $("iosHint").hidden = false; $("volumeHint").hidden = false;
+} else {
+  const setVolume = v => { audio.volume = v / 100; volumeValue.textContent = v + " %"; volumeEl.value = v; };
+  volumeEl.addEventListener("input", () => { setVolume(+volumeEl.value); STORE.set("volume", +volumeEl.value); });
+  setVolume(STORE.get("volume", 80));
 }
-function setVolume(v) {
-  audio.volume = v / 100;
-  volumeValue.textContent = v + " %";
-  volumeEl.value = v;
+
+/* AirPlay (nur Safari, wenn ein Gerät verfügbar ist) */
+if (window.WebKitPlaybackTargetAvailabilityEvent) {
+  const airBtn = $("airplayBtn");
+  audio.addEventListener("webkitplaybacktargetavailabilitychanged", e => { airBtn.hidden = e.availability !== "available"; });
+  airBtn.addEventListener("click", () => audio.webkitShowPlaybackTargetPicker());
 }
-volumeEl.addEventListener("input", () => { setVolume(+volumeEl.value); STORE.set("volume", +volumeEl.value); });
-setVolume(STORE.get("volume", 80));
 
 /* Einstellungen */
-const sheet = document.getElementById("sheet"), backdrop = document.getElementById("backdrop");
+const sheet = $("sheet"), backdrop = $("backdrop");
 function toggleSheet(open) { sheet.classList.toggle("open", open); backdrop.classList.toggle("open", open); }
-document.getElementById("settingsBtn").addEventListener("click", () => toggleSheet(true));
-document.getElementById("closeSheet").addEventListener("click", () => toggleSheet(false));
+$("settingsBtn").addEventListener("click", () => toggleSheet(true));
+$("closeSheet").addEventListener("click", () => toggleSheet(false));
 backdrop.addEventListener("click", () => toggleSheet(false));
 
 searchEl.addEventListener("input", renderList);
 
-/* Start: letzten Sender vorauswählen (abspielen erst nach Tipp) */
-const last = STATIONS.find(s => s.ID === STORE.get("last", null));
-if (last) { current = last; nowTitle.textContent = last.Name; setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
-renderChips();
-renderList();
+/* Start: Senderliste laden, letzten Sender vorauswählen (abspielen erst nach Tipp) */
+function setVersion() { $("version").textContent = "Thermofin Jukebox Web " + APP_VERSION + " · " + STATIONS.length + " Sender"; }
+function loadStations() {
+  fetch("radiostation.json", { cache: "no-cache" })
+    .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
+    .then(text => {
+      const list = normalizeStations(JSON.parse(text.replace(/^﻿/, "")));
+      if (list.length === 0) throw new Error("Leere Liste");
+      STATIONS = list;
+      const last = STATIONS.find(s => s.ID === (current ? current.ID : STORE.get("last", null)));
+      if (last && !current) { selectStation(last); setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
+      else if (last) current = last;
+      setVersion();
+      renderChips();
+      renderList();
+      updatePlayButton();
+    })
+    .catch(() => {
+      listEl.innerHTML = '<li class="empty">Senderliste konnte nicht geladen werden.<br><button id="retryBtn">Erneut versuchen</button></li>';
+      $("retryBtn").addEventListener("click", loadStations);
+    });
+}
+setVersion();
 updatePlayButton();
-
-fetch("radiostation.json", { cache: "no-cache" })
-  .then(r => r.ok ? r.text() : Promise.reject())
-  .then(text => {
-    const list = normalizeStations(JSON.parse(text.replace(/^\uFEFF/, "")));
-    if (list.length === 0) return;
-    STATIONS = list;
-    if (current) current = STATIONS.find(s => s.ID === current.ID) || current;
-    document.querySelector(".version").textContent = "Thermofin Jukebox Web 1.0.0 · " + STATIONS.length + " Sender";
-    renderChips();
-    renderList();
-  })
-  .catch(() => {});
+loadStations();
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
