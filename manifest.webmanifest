@@ -1,11 +1,11 @@
-{
-  "name": "Thermofin Jukebox",
+﻿{
+  "name": "DWH’s Jukebox Player",
   "short_name": "Jukebox",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#202020",
-  "theme_color": "#202020",
+  "background_color": "#0a0614",
+  "theme_color": "#0a0614",
   "lang": "de",
   "icons": [
     {
