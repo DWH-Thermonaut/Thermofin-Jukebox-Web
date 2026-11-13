@@ -11,8 +11,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jukebox">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png?v=1.4.1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1.4.1">
 <style>
 :root {
   --bg: #f8f9fb; --surface: #ffffff; --surface-alt: #eef0f3; --text: #202020; --text-2: #646464;
@@ -237,7 +237,7 @@ html[data-theme="neon"] .sheet { background: #120a26; border-top: 1px solid rgba
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.4.1";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
