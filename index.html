@@ -200,7 +200,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
 let STATIONS = [];
@@ -373,20 +373,45 @@ function selectStation(station) {
   nowLogo.hidden = false;
   fillLogo(nowLogo, station);
 }
+/* SomaFM verteilt auf mehrere Server: fällt einer aus, wird der nächste probiert */
+function streamUrls(station) {
+  const m = station.URL.match(/^https:\/\/ice\d*\.somafm\.com(\/.*)$/);
+  if (!m) return [station.URL];
+  return [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
+}
+const attempt = { id: null, urls: [], i: 0, timer: 0 };
+function tryStream() {
+  clearTimeout(attempt.timer);
+  audio.src = attempt.urls[attempt.i];
+  const result = audio.play();
+  if (result && result.catch) result.catch(err => { if (err.name !== "AbortError" && err.name !== "NotSupportedError") setStatus("Wiedergabe nicht möglich – bitte erneut tippen", "err"); });
+  attempt.timer = setTimeout(() => { if (audio.readyState < 3) streamFailed("keine Antwort"); }, 15000);
+}
+function streamFailed(reason) {
+  clearTimeout(attempt.timer);
+  if (!current || attempt.id !== current.ID) return;
+  if (++attempt.i < attempt.urls.length) { setStatus("Verbinde … (Server " + (attempt.i + 1) + ")"); tryStream(); return; }
+  stopMeta();
+  audio.pause(); audio.removeAttribute("src"); audio.load();
+  failed.add(current.ID);
+  setStatus("Sender nicht erreichbar (" + reason + ")", "err");
+  renderList();
+  updatePlayButton();
+}
 function play(station) {
   if (!current || current.ID !== station.ID) stopMeta();
   selectStation(station);
   failed.delete(station.ID);
   STORE.set("last", station.ID);
   setStatus("Verbinde …");
-  audio.src = station.URL;
-  const result = audio.play();
-  if (result && result.catch) result.catch(err => { if (err.name !== "AbortError") setStatus("Wiedergabe nicht möglich – bitte erneut tippen", "err"); });
+  Object.assign(attempt, { id: station.ID, urls: streamUrls(station), i: 0 });
+  tryStream();
   updateMediaSession();
   renderList();
   updatePlayButton();
 }
 function stop() {
+  clearTimeout(attempt.timer); attempt.id = null;
   stopMeta();
   audio.pause();
   audio.removeAttribute("src");
@@ -395,19 +420,18 @@ function stop() {
   updatePlayButton();
 }
 audio.addEventListener("playing", () => {
+  clearTimeout(attempt.timer);
+  if (current && attempt.id === current.ID) current.URL = attempt.urls[attempt.i];
   showSong(); updatePlayButton();
   if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
   if (meta.station !== current.ID) startMeta();
 });
 audio.addEventListener("waiting", () => setStatus("Puffert …"));
 audio.addEventListener("pause", () => { updatePlayButton(); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; });
+const MEDIA_ERRORS = { 1: "abgebrochen", 2: "Netzwerkfehler", 3: "Format nicht lesbar", 4: "Adresse/Format nicht unterstützt" };
 audio.addEventListener("error", () => {
   if (!current || !audio.getAttribute("src")) return;
-  stopMeta();
-  failed.add(current.ID);
-  setStatus("Sender nicht erreichbar", "err");
-  renderList();
-  updatePlayButton();
+  streamFailed(MEDIA_ERRORS[audio.error && audio.error.code] || "Fehler");
 });
 
 playBtn.addEventListener("click", () => {
