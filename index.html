@@ -191,6 +191,7 @@ ul { list-style: none; margin: 0; padding: 0; }
   </div>
   <p>Installieren: <b>iPhone</b> – in Safari Teilen → „Zum Home-Bildschirm“. <b>Android</b> – in Chrome Menü ⋮ → „Zum Startbildschirm hinzufügen“ bzw. „App installieren“.</p>
   <p>Titelanzeige: Titel und Interpret erscheinen, sobald der Sender sie bereitstellt. Nicht jeder Sender liefert diese Angaben.</p>
+  <p id="metaDiag"></p>
   <p id="volumeHint" hidden>Auf dem iPhone lässt Apple keine Lautstärkeregelung durch Webseiten zu – bitte die Lautstärketasten oder das Kontrollzentrum verwenden.</p>
   <button class="close" id="closeSheet">Schließen</button>
   <div class="version" id="version"></div>
@@ -199,7 +200,9 @@ ul { list-style: none; margin: 0; padding: 0; }
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
+/* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
+const TITLE_SERVICE = "";
 let STATIONS = [];
 
 /* Browser erlauben auf https-Seiten nur https-Streams: http-Adressen werden umgestellt */
@@ -463,21 +466,29 @@ async function readIcyTitle(reader, metaint) {
     }
   }
 }
+const named = (label, fn) => Object.assign(fn, { label });
 const metaProviders = s => {
   const u = new URL(s.URL), list = [], soma = somaChannel(s.URL);
-  if (u.hostname === "stream.laut.fm") list.push(async signal => {
+  if (TITLE_SERVICE) list.push(named("Titel-Dienst", async signal => {
+    const r = await fetch(TITLE_SERVICE + "?url=" + encodeURIComponent(s.URL), { signal, cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    return j.title ? { title: String(j.title).trim(), artist: String(j.artist || "").trim() } : null;
+  }));
+  if (u.hostname === "stream.laut.fm") list.push(named("laut.fm", async signal => {
     const r = await fetch("https://api.laut.fm/station/" + u.pathname.slice(1) + "/current_song", { signal, cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     return j && j.title ? { title: String(j.title).trim(), artist: j.artist && j.artist.name ? String(j.artist.name).trim() : "" } : null;
-  });
-  if (soma) list.push(async signal => {
+  }));
+  if (soma) list.push(named("SomaFM", async signal => {
     const r = await fetch("https://api.somafm.com/songs/" + soma + ".json", { signal, cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     const song = ((await r.json()).songs || [])[0];
     return song && song.title ? { title: String(song.title).trim(), artist: String(song.artist || "").trim() } : null;
-  });
-  list.push(async signal => {
+  }));
+  list.push(named("Icecast-Status", async signal => {
     const r = await fetch(u.origin + "/status-json.xsl", { signal, cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     let src = ((await r.json()).icestats || {}).source;
@@ -485,14 +496,14 @@ const metaProviders = s => {
     if (!src) throw new Error("Mount fehlt");
     if (src.artist && src.title) return { artist: String(src.artist).trim(), title: String(src.title).trim() };
     return splitTitle(src.title || src.yp_currently_playing);
-  });
-  list.push(async signal => {
+  }));
+  list.push(named("Stream (ICY)", async signal => {
     const r = await fetch(s.URL, { signal, cache: "no-store", headers: { "Icy-MetaData": "1" } });
     const metaint = parseInt(r.headers.get("icy-metaint"), 10);
     if (!r.ok || !r.body || !(metaint > 0)) { if (r.body) r.body.cancel().catch(() => {}); throw new Error("Kein ICY"); }
     const reader = r.body.getReader();
     try { return await readIcyTitle(reader, metaint); } finally { reader.cancel().catch(() => {}); }
-  });
+  }));
   return list;
 };
 const meta = { gen: 0, station: null, timer: 0, ctrl: null, song: null, info: new Map() };
@@ -508,6 +519,7 @@ function startMeta() {
   meta.station = st.ID;
   if (!meta.info.has(st.ID)) meta.info.set(st.ID, { good: -1, fails: 0, dead: new Set() });
   const info = meta.info.get(st.ID);
+  info.labels = providers.map(p => p.label);
   const run = async () => {
     const order = info.good >= 0 ? [info.good] : providers.map((_, i) => i).filter(i => !info.dead.has(i));
     if (!order.length) return;
@@ -526,8 +538,16 @@ function startMeta() {
       } finally { clearTimeout(t); }
     }
     if (gen === meta.gen && (info.good >= 0 || info.dead.size < providers.length)) meta.timer = setTimeout(run, 25000);
+    showMetaDiag();
   };
   run();
+}
+function showMetaDiag() {
+  const el = $("metaDiag"), info = current && meta.info.get(current.ID);
+  if (!info || !info.labels) { el.textContent = "Titelquelle: erst einen Sender abspielen."; return; }
+  if (info.good >= 0) el.textContent = "Titelquelle für " + current.Name + ": " + info.labels[info.good] + ".";
+  else if (info.dead.size >= info.labels.length) el.textContent = current.Name + " liefert keine Titel (geprüft: " + info.labels.join(", ") + ")." + (TITLE_SERVICE ? "" : " Kein Titel-Dienst eingerichtet.");
+  else el.textContent = "Titelquelle für " + current.Name + " wird gesucht …";
 }
 const songText = song => song.title + (song.artist ? " – " + song.artist : "");
 function setSong(song) {
@@ -595,7 +615,7 @@ if (window.WebKitPlaybackTargetAvailabilityEvent) {
 /* Einstellungen */
 const sheet = $("sheet"), backdrop = $("backdrop");
 function toggleSheet(open) { sheet.classList.toggle("open", open); backdrop.classList.toggle("open", open); }
-$("settingsBtn").addEventListener("click", () => toggleSheet(true));
+$("settingsBtn").addEventListener("click", () => { showMetaDiag(); toggleSheet(true); });
 $("closeSheet").addEventListener("click", () => toggleSheet(false));
 backdrop.addEventListener("click", () => toggleSheet(false));
 
