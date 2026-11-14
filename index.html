@@ -814,6 +814,149 @@
                 line-height: 1.45;
             }
 
+        .glow-h {
+            color: var(--accent);
+        }
+
+        html[data-fx] .glow-h {
+            text-shadow: 0 0 10px var(--glow-a);
+        }
+
+        .installed {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--list-text);
+            font-size: 13px;
+            font-weight: 600;
+            margin: 10px 0 0;
+        }
+
+            .installed svg {
+                width: 18px;
+                height: 18px;
+            }
+
+        .qr-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin: 14px 0 12px;
+            padding: 16px 12px;
+            border-radius: 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .qr {
+            width: 180px;
+            height: 180px;
+            padding: 10px;
+            background: #ffffff;
+            border-radius: 14px;
+            image-rendering: pixelated;
+            box-shadow: 0 0 0 2px var(--accent), 0 0 18px var(--glow-a, transparent);
+        }
+
+        .qr-label {
+            color: var(--text-2);
+            font-size: 12.5px;
+            margin-top: 4px;
+        }
+
+        .qr-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 100%;
+        }
+
+            .qr-link a {
+                color: var(--accent);
+                font-weight: 600;
+                font-size: 13.5px;
+                word-break: break-all;
+                text-align: center;
+            }
+
+        html[data-fx] .qr-link a {
+            text-shadow: 0 0 8px var(--glow-a);
+        }
+
+        .icon-btn.small {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+        }
+
+            .icon-btn.small svg {
+                width: 17px;
+                height: 17px;
+            }
+
+        .copy-status {
+            font-size: 12px;
+            color: var(--list-text);
+            min-height: 1em;
+        }
+
+            .copy-status.err {
+                color: var(--danger);
+            }
+
+        .os-card {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            margin-top: 8px;
+        }
+
+            .os-card b {
+                display: block;
+                font-size: 14.5px;
+                margin-bottom: 3px;
+            }
+
+            .os-card span {
+                display: block;
+                color: var(--text-2);
+                font-size: 12.5px;
+                line-height: 1.45;
+            }
+
+        .os-i {
+            width: 24px;
+            height: 24px;
+            flex: 0 0 auto;
+            margin-top: 2px;
+        }
+
+            .os-i.cyan {
+                color: #19c3e6;
+            }
+
+            .os-i.pink {
+                color: #e83ab8;
+            }
+
+        html[data-fx] .os-i.cyan {
+            color: #19f0ff;
+            filter: drop-shadow(0 0 6px rgba(25, 240, 255, .7));
+        }
+
+        html[data-fx] .os-i.pink {
+            color: #ff2bd6;
+            filter: drop-shadow(0 0 6px rgba(255, 43, 214, .7));
+        }
+
+        .os-card.here {
+            border-color: var(--accent);
+        }
+
         .sheet-foot {
             display: flex;
             align-items: center;
@@ -1268,8 +1411,24 @@
             <p class="hint">Eigene Sender werden nur auf diesem Gerät gespeichert. Die Stream-Adresse findest du meist auf der Webseite des Senders oder bei radio-browser.info.</p>
         </div>
         <div class="card">
+            <h3 class="glow-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5" /><path d="M11 18h2" /></svg>Mobile App</h3>
+            <p class="hint" id="appIntro">Die Jukebox gibt es auch als App für dein Handy – mit allen Sendern, Favoriten und Titelanzeige. Einfach den QR-Code mit der Handy-Kamera scannen und die App zum Startbildschirm hinzufügen.</p>
+            <p class="installed" id="appInstalled" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Die App ist auf diesem Gerät bereits installiert.</p>
+            <div class="qr-box">
+                <img class="qr" src="qr.png" alt="QR-Code zur Jukebox-App" width="180" height="180">
+                <span class="qr-label">oder direkt im Browser öffnen:</span>
+                <div class="qr-link">
+                    <a id="appLink" href="https://dwh-thermonaut.github.io/Thermofin-Jukebox-Web/" target="_blank" rel="noopener">https://dwh-thermonaut.github.io/Thermofin-Jukebox-Web/</a>
+                    <button class="icon-btn small" id="copyLink" type="button" aria-label="Link kopieren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg></button>
+                    <button class="icon-btn small" id="shareLink" type="button" aria-label="Link teilen" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M16 6l-4-4-4 4M12 2v13" /></svg></button>
+                </div>
+                <span class="copy-status" id="copyStatus"></span>
+            </div>
+            <div class="os-card" id="osIphone"><svg class="os-i cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5" /><path d="M11 18h2" /></svg><div><b>iPhone (Safari)</b><span>QR-Code mit der Kamera scannen und den Link in Safari öffnen. Unten auf „Teilen“ tippen (Quadrat mit Pfeil nach oben) und „Zum Home-Bildschirm“ wählen.</span></div></div>
+            <div class="os-card" id="osAndroid"><svg class="os-i pink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M5 6h14M5 18h14M11 20h2" /></svg><div><b>Android (Chrome)</b><span>QR-Code mit der Kamera scannen und den Link in Chrome öffnen. Oben rechts auf das Menü (⋮) tippen und „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ wählen.</span></div></div>
+        </div>
+        <div class="card">
             <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>Hinweise</h3>
-            <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /></svg><div><b>Als App installieren</b><span>iPhone: in Safari Teilen → „Zum Home-Bildschirm“. Android: in Chrome Menü ⋮ → „App installieren“.</span></div></div>
             <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg><div><b>Titelanzeige</b><span>Titel und Interpret erscheinen, sobald der Sender sie bereitstellt.</span><span id="metaDiag"></span></div></div>
             <div class="info-row" id="volumeHint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg><div><b>Lautstärke am iPhone</b><span>Apple lässt keine Lautstärkeregelung durch Webseiten zu – bitte die Tasten am iPhone oder das Kontrollzentrum verwenden.</span></div></div>
         </div>
@@ -1282,7 +1441,7 @@
     <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
     <script>
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.8.0";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
@@ -1770,6 +1929,33 @@ function toggleSheet(open) { sheet.classList.toggle("open", open); backdrop.clas
 $("settingsBtn").addEventListener("click", () => { showMetaDiag(); prepareAddForm(); toggleSheet(true); });
 $("closeSheet").addEventListener("click", () => toggleSheet(false));
 $("closeX").addEventListener("click", () => toggleSheet(false));
+
+/* Mobile App: Link kopieren/teilen, eigenes System hervorheben, installierte App erkennen */
+const APP_URL = $("appLink").href;
+function copyFallback(text) {
+          const ta = document.createElement("textarea");
+          ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          try { return document.execCommand("copy"); } catch { return false; } finally { ta.remove(); }
+}
+$("copyLink").addEventListener("click", async () => {
+          let ok = false;
+          try { await navigator.clipboard.writeText(APP_URL); ok = true; } catch { ok = copyFallback(APP_URL); }
+          const st = $("copyStatus");
+          st.textContent = ok ? "Link kopiert." : "Kopieren nicht möglich – Link lange antippen.";
+          st.classList.toggle("err", !ok);
+          setTimeout(() => { st.textContent = ""; }, 2500);
+});
+if (navigator.share) {
+          $("shareLink").hidden = false;
+          $("shareLink").addEventListener("click", () => navigator.share({ title: APP_NAME, url: APP_URL }).catch(() => {}));
+}
+(() => {
+          const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+          if (standalone) { $("appInstalled").hidden = false; $("appIntro").textContent = "Teile die App mit Kollegen: QR-Code zeigen oder Link schicken."; }
+          if (isIOS) $("osIphone").classList.add("here");
+          else if (/Android/i.test(navigator.userAgent)) $("osAndroid").classList.add("here");
+})();
 document.addEventListener("keydown", e => { if (e.key === "Escape" && sheet.classList.contains("open")) toggleSheet(false); });
 
 /* Eigene Sender (wie Desktop): IDs ab 1001, gespeichert im Browser dieses Geräts */
