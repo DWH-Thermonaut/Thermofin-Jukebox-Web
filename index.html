@@ -126,18 +126,56 @@ ul { list-style: none; margin: 0; padding: 0; }
 .volume .ios-hint { flex: 1; }
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: none; }
 .sheet {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--surface); border-radius: 16px 16px 0 0;
-  padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); display: none; max-width: 560px; margin: 0 auto;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--surface); border-radius: 18px 18px 0 0;
+  max-width: 600px; margin: 0 auto; max-height: calc(100dvh - 24px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom)); display: none;
 }
 .sheet.open, .sheet-backdrop.open { display: block; }
-.sheet h2 { margin: 0 0 12px; font-size: 18px; }
-.seg { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface-alt); border-radius: 10px; padding: 3px; gap: 3px; }
-.seg .wide { grid-column: span 2; }
-.seg button { flex: 1; padding: 9px 4px; border-radius: 8px; font-size: 14px; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
-.sheet p { color: var(--text-2); font-size: 13px; line-height: 1.45; margin: 14px 0 0; }
-.sheet .close { margin-top: 16px; width: 100%; padding: 12px; border-radius: 10px; background: var(--surface-alt); font-weight: 600; }
-.version { color: var(--text-2); font-size: 12px; margin-top: 12px; text-align: center; }
+.sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 16px 0 12px; background: inherit; }
+.sheet-head h2 { margin: 0; flex: 1; font-size: 22px; font-weight: 700; color: var(--accent); }
+html[data-fx] .sheet-head h2 { text-shadow: 0 0 12px var(--glow-a); }
+.card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.card h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 16px; }
+.card h3 svg, .info-row > svg { width: 20px; height: 20px; flex: 0 0 auto; color: var(--accent); }
+.hint { color: var(--text-2); font-size: 12.5px; line-height: 1.45; margin: 10px 0 0; }
+.theme-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.theme-chips button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+.theme-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .25); flex: 0 0 auto; }
+.field { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px 10px; }
+.field label { color: var(--text-2); font-size: 14px; }
+.field input {
+  width: 100%; min-width: 0; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; outline: 0;
+}
+.field input:focus { border-color: var(--accent); }
+.field input[readonly] { width: 90px; color: var(--text-2); font-family: Consolas, ui-monospace, monospace; }
+html[data-fx] .field input { border-color: var(--fx-input-line); }
+.genre-tips { grid-column: 2; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.genre-tips::-webkit-scrollbar { display: none; }
+.genre-tips button { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; color: var(--text-2); }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 14px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); }
+.btn svg { width: 16px; height: 16px; }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+html[data-fx] .btn.primary { background: var(--fx-chip); box-shadow: 0 0 12px var(--glow-a); }
+.add-status { font-size: 13px; color: var(--text-2); flex: 1 1 200px; }
+.add-status.ok { color: var(--list-text); } .add-status.err { color: var(--danger); } .add-status.warn { color: var(--warm); }
+.own-list { margin-top: 14px; border-top: 1px solid var(--border); }
+.own-list h4 { margin: 12px 0 4px; font-size: 13px; color: var(--text-2); font-weight: 600; }
+.own-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.own-row .st-logo { width: 32px; height: 32px; border-radius: 8px; font-size: 12px; }
+.own-row .info { flex: 1; min-width: 0; }
+.own-row .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.own-row .url { font-size: 11.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.own-row .del { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; color: var(--danger); flex: 0 0 auto; }
+.own-row .del svg { width: 18px; height: 18px; }
+.info-row { display: flex; gap: 12px; padding: 8px 0; }
+.info-row + .info-row { border-top: 1px solid var(--border); }
+.info-row b { display: block; font-size: 14px; margin-bottom: 2px; }
+.info-row span { display: block; color: var(--text-2); font-size: 12.5px; line-height: 1.45; }
+.sheet-foot { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.version { flex: 1; color: var(--text-2); font-size: 12px; }
 /* Effekt-Designs (wie Desktop-Version): Farben und Effekte über Variablen, gemeinsame Regeln über data-fx */
 html[data-theme="neon"] {
   --bg: #0a0614; --surface: rgba(18, 10, 38, .88); --surface-alt: rgba(42, 26, 82, .55); --text: #eafcff; --text-2: #9ea6cf;
@@ -206,7 +244,7 @@ html[data-fx] .search { background: var(--surface); border-color: var(--fx-input
 html[data-fx] .search:focus-within { box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--glow-a); }
 html[data-fx] .chips { padding: 10px 6px 6px; margin: 0 -6px; }
 html[data-fx] .chip { background: var(--surface-alt); }
-html[data-fx] .chip[aria-pressed="true"], html[data-fx] .seg button[aria-pressed="true"] { background: var(--fx-chip); color: var(--accent-text); box-shadow: 0 0 14px var(--glow-a); }
+html[data-fx] .chip[aria-pressed="true"], html[data-fx] .theme-chips button[aria-pressed="true"] { background: var(--fx-chip); color: var(--accent-text); box-shadow: 0 0 14px var(--glow-a); }
 html[data-fx] .station { background-color: var(--fx-list, transparent); }
 html[data-fx] .station.playing { background: var(--fx-row); background-color: var(--fx-list, transparent); box-shadow: inset 3px 0 0 var(--accent); }
 html[data-fx] .station.playing .name { text-shadow: 0 0 10px var(--glow-a); }
@@ -219,6 +257,7 @@ html[data-fx] .now .status.ok { color: var(--accent); text-shadow: 0 0 8px var(-
 html[data-fx] .now .status b { color: #ffffff; }
 html[data-fx] .volume input { accent-color: var(--fx-slider); }
 html[data-fx] .icon-btn, html[data-fx] .round { background: var(--surface-alt); box-shadow: inset 0 0 0 1px var(--fx-btn-line); }
+html[data-fx] .card { background: color-mix(in srgb, var(--fx-sheet) 70%, #ffffff 4%); border-color: var(--border); }
 html[data-fx] .sheet { background: var(--fx-sheet); border-top: 1px solid var(--fx-input-line); box-shadow: 0 -10px 40px var(--glow-a); }
 /* Sonnenuntergang: glühende Verlaufsrahmen */
 html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[data-theme="sunset"] .round, html[data-theme="sunset"] .chip:not([aria-pressed="true"]) {
@@ -274,32 +313,59 @@ html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[dat
 
 <div class="sheet-backdrop" id="backdrop"></div>
 <section class="sheet" id="sheet" role="dialog" aria-label="Einstellungen">
-  <h2>Design</h2>
-  <div class="seg" id="themeSeg">
-    <button data-theme="auto">Auto</button>
-    <button data-theme="light">Hell</button>
-    <button data-theme="dark">Dunkel</button>
-    <button data-theme="neon">Neon</button>
-    <button data-theme="abstrakt">Abstrakt</button>
-    <button data-theme="sunset" class="wide">Sonnenuntergang</button>
-    <button data-theme="thermofin">Thermofin</button>
+  <div class="sheet-head">
+    <h2>Einstellungen</h2>
+    <button class="icon-btn" id="closeX" aria-label="Schließen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
   </div>
-  <p>Installieren: <b>iPhone</b> – in Safari Teilen → „Zum Home-Bildschirm“. <b>Android</b> – in Chrome Menü ⋮ → „Zum Startbildschirm hinzufügen“ bzw. „App installieren“.</p>
-  <p>Titelanzeige: Titel und Interpret erscheinen, sobald der Sender sie bereitstellt. Nicht jeder Sender liefert diese Angaben.</p>
-  <p id="metaDiag"></p>
-  <p id="volumeHint" hidden>Auf dem iPhone lässt Apple keine Lautstärkeregelung durch Webseiten zu – bitte die Lautstärketasten oder das Kontrollzentrum verwenden.</p>
-  <button class="close" id="closeSheet">Schließen</button>
-  <div class="version" id="version"></div>
+  <div class="card">
+    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></svg>Design</h3>
+    <div class="theme-chips" id="themeSeg">
+      <button data-theme="auto"><i class="dot" style="background:linear-gradient(135deg,#f8f9fb 0 50%,#202020 50% 100%)"></i>Auto</button>
+      <button data-theme="light"><i class="dot" style="background:linear-gradient(135deg,#ffffff,#dce6f2)"></i>Hell</button>
+      <button data-theme="dark"><i class="dot" style="background:linear-gradient(135deg,#3c3c3c,#151515)"></i>Dunkel</button>
+      <button data-theme="neon"><i class="dot" style="background:linear-gradient(135deg,#19f0ff,#8a5cff,#ff2bd6)"></i>Neon</button>
+      <button data-theme="abstrakt"><i class="dot" style="background:linear-gradient(135deg,#ffe600,#7cff1e,#19b8ff,#ff2e97)"></i>Abstrakt</button>
+      <button data-theme="sunset"><i class="dot" style="background:linear-gradient(135deg,#ffe066,#ff9a3d,#ff5e7e,#6a2c8c)"></i>Sonnenuntergang</button>
+      <button data-theme="thermofin"><i class="dot" style="background:linear-gradient(135deg,#1b3a6b,#a7b0be,#c8102e)"></i>Thermofin</button>
+    </div>
+    <p class="hint">„Auto“ folgt der Einstellung des Geräts (hell oder dunkel).</p>
+  </div>
+  <div class="card">
+    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>Neuen Radiosender hinzufügen</h3>
+    <div class="field">
+      <label for="newId">ID</label><input id="newId" readonly>
+      <label for="newName">Name</label><input id="newName" autocomplete="off" enterkeyhint="next">
+      <label for="newGenre">Genre</label><input id="newGenre" autocomplete="off" enterkeyhint="next" placeholder="Sonstiges">
+      <div class="genre-tips" id="genreTips"></div>
+      <label for="newUrl">URL</label><input id="newUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" enterkeyhint="done">
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="saveStation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Sender speichern</button>
+      <span class="add-status" id="addStatus"></span>
+    </div>
+    <div class="own-list" id="ownList" hidden><h4>Eigene Sender</h4><div id="ownRows"></div></div>
+    <p class="hint">Eigene Sender werden nur auf diesem Gerät gespeichert. Die Stream-Adresse findest du meist auf der Webseite des Senders oder bei radio-browser.info.</p>
+  </div>
+  <div class="card">
+    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Hinweise</h3>
+    <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><div><b>Als App installieren</b><span>iPhone: in Safari Teilen → „Zum Home-Bildschirm“. Android: in Chrome Menü ⋮ → „App installieren“.</span></div></div>
+    <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><div><b>Titelanzeige</b><span>Titel und Interpret erscheinen, sobald der Sender sie bereitstellt.</span><span id="metaDiag"></span></div></div>
+    <div class="info-row" id="volumeHint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><b>Lautstärke am iPhone</b><span>Apple lässt keine Lautstärkeregelung durch Webseiten zu – bitte die Tasten am iPhone oder das Kontrollzentrum verwenden.</span></div></div>
+  </div>
+  <div class="sheet-foot">
+    <span class="version" id="version"></span>
+    <button class="btn" id="closeSheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Schließen</button>
+  </div>
 </section>
 
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.6.0";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
-let STATIONS = [];
+let STATIONS = [], BASE_STATIONS = [];
 
 /* Browser erlauben auf https-Seiten nur https-Streams: http-Adressen werden umgestellt */
 function normalizeUrl(url) {
@@ -312,7 +378,7 @@ function normalizeUrl(url) {
 function normalizeStations(list) {
   return list
     .filter(s => s && s.ID && s.Name && s.URL && !isNaN(parseInt(s.ID, 10)))
-    .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "" }))
+    .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "", Own: !!s.Own }))
     .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10));
 }
 
@@ -443,7 +509,7 @@ function renderList() {
     li.querySelector(".id").textContent = s.ID;
     fillLogo(li.querySelector(".st-logo"), s);
     li.querySelector(".name").textContent = s.Name;
-    li.querySelector(".genre").textContent = s.Genre;
+    li.querySelector(".genre").textContent = genreText(s);
     const fav = li.querySelector(".fav");
     const isFav = favorites.has(s.ID);
     fav.innerHTML = isFav ? starSvg : starOutline;
@@ -699,7 +765,7 @@ function showSong() {
   }
   document.querySelectorAll(".station .genre.song").forEach(el => {
     const s = STATIONS.find(x => x.ID === el.closest(".station").dataset.id);
-    el.classList.remove("song"); el.textContent = s ? s.Genre : "";
+    el.classList.remove("song"); el.textContent = s ? genreText(s) : "";
   });
   if (song) {
     const li = listEl.querySelector('.station[data-id="' + CSS.escape(current.ID) + '"] .genre');
@@ -750,8 +816,65 @@ if (window.WebKitPlaybackTargetAvailabilityEvent) {
 /* Einstellungen */
 const sheet = $("sheet"), backdrop = $("backdrop");
 function toggleSheet(open) { sheet.classList.toggle("open", open); backdrop.classList.toggle("open", open); }
-$("settingsBtn").addEventListener("click", () => { showMetaDiag(); toggleSheet(true); });
+$("settingsBtn").addEventListener("click", () => { showMetaDiag(); prepareAddForm(); toggleSheet(true); });
 $("closeSheet").addEventListener("click", () => toggleSheet(false));
+$("closeX").addEventListener("click", () => toggleSheet(false));
+document.addEventListener("keydown", e => { if (e.key === "Escape" && sheet.classList.contains("open")) toggleSheet(false); });
+
+/* Eigene Sender (wie Desktop): IDs ab 1001, gespeichert im Browser dieses Geräts */
+const genreText = s => s.Own ? s.Genre + " · Eigener Sender" : s.Genre;
+const ownStations = () => [].concat(STORE.get("own", []) || []).filter(s => s && s.ID && s.Name && s.URL);
+const nextOwnId = () => String(ownStations().reduce((max, s) => Math.max(max, parseInt(s.ID, 10) || 0), 1000) + 1);
+function buildStations() {
+  STATIONS = normalizeStations([...BASE_STATIONS, ...ownStations().map(s => ({ ...s, Own: true }))]);
+  if (current) current = STATIONS.find(s => s.ID === current.ID) || current;
+}
+function refreshStations() {
+  buildStations(); setVersion(); renderChips(); renderList(); renderOwn(); renderGenreTips();
+}
+function setAddStatus(text, kind) { const el = $("addStatus"); el.textContent = text; el.className = "add-status" + (kind ? " " + kind : ""); }
+function renderGenreTips() {
+  const box = $("genreTips"); box.replaceChildren();
+  for (const g of [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"))) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = g;
+    b.addEventListener("click", () => { $("newGenre").value = g; });
+    box.appendChild(b);
+  }
+}
+function renderOwn() {
+  const own = STATIONS.filter(s => s.Own), rows = $("ownRows");
+  $("ownList").hidden = own.length === 0;
+  rows.replaceChildren();
+  for (const s of own) {
+    const row = document.createElement("div");
+    row.className = "own-row";
+    row.innerHTML = '<span class="st-logo"></span><div class="info"><div class="name"></div><div class="url"></div></div><button class="del" type="button" aria-label="Sender löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
+    fillLogo(row.querySelector(".st-logo"), s);
+    row.querySelector(".name").textContent = s.ID + " · " + s.Name;
+    row.querySelector(".url").textContent = s.URL;
+    row.querySelector(".del").addEventListener("click", () => {
+      if (!confirm("„" + s.Name + "“ löschen?")) return;
+      STORE.set("own", ownStations().filter(o => String(o.ID) !== s.ID));
+      favorites.delete(s.ID); STORE.set("favorites", [...favorites]);
+      refreshStations(); prepareAddForm();
+      setAddStatus("„" + s.Name + "“ wurde gelöscht.");
+    });
+    rows.appendChild(row);
+  }
+}
+function prepareAddForm() { $("newId").value = nextOwnId(); renderGenreTips(); renderOwn(); }
+$("saveStation").addEventListener("click", () => {
+  const name = $("newName").value.trim(), genre = $("newGenre").value.trim(), url = $("newUrl").value.trim();
+  if (!name || !url) { setAddStatus("Bitte Name und URL ausfüllen.", "err"); return; }
+  if (!/^https?:\/\/\S+$/i.test(url)) { setAddStatus("Die URL muss mit http:// oder https:// beginnen.", "err"); return; }
+  if (STATIONS.some(s => s.URL === normalizeUrl(url))) { setAddStatus("Dieser Sender (URL) ist bereits vorhanden.", "warn"); return; }
+  const entry = { ID: nextOwnId(), Name: name, Genre: genre || "Sonstiges", URL: url };
+  STORE.set("own", [...ownStations(), entry]);
+  refreshStations();
+  $("newName").value = ""; $("newGenre").value = ""; $("newUrl").value = ""; $("newId").value = nextOwnId();
+  setAddStatus("„" + name + "“ wurde gespeichert (ID " + entry.ID + ")." + (/^http:/i.test(url) ? " Hinweis: wird über https abgespielt." : ""), "ok");
+});
+$("newUrl").addEventListener("keydown", e => { if (e.key === "Enter") $("saveStation").click(); });
 backdrop.addEventListener("click", () => toggleSheet(false));
 
 searchEl.addEventListener("input", renderList);
@@ -762,9 +885,10 @@ function loadStations() {
   fetch("radiostation.json", { cache: "no-cache" })
     .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
     .then(text => {
-      const list = normalizeStations(JSON.parse(text.replace(/^﻿/, "")));
+      const list = normalizeStations(JSON.parse(text.replace(/^\uFEFF/, "")));
       if (list.length === 0) throw new Error("Leere Liste");
-      STATIONS = list;
+      BASE_STATIONS = list;
+      buildStations();
       const last = STATIONS.find(s => s.ID === (current ? current.ID : STORE.get("last", null)));
       if (last && !current) { selectStation(last); setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
       else if (last) current = last;
