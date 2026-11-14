@@ -1,369 +1,1288 @@
 ﻿<!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DWH’s Jukebox</title>
-<meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)" data-orig="#202020">
-<meta name="theme-color" content="#f8f9fb" media="(prefers-color-scheme: light)" data-orig="#f8f9fb">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Jukebox">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<style>
-:root {
-  --bg: #f8f9fb; --surface: #ffffff; --surface-alt: #eef0f3; --text: #202020; --text-2: #646464;
-  --border: #dcdfe4; --accent: #0067c0; --accent-text: #ffffff; --play: #107c10; --danger: #c42b1c;
-  --list-text: #006400; --warm: #be5f00; --shadow: 0 -4px 20px rgba(0,0,0,.08);
-}
-html[data-theme="dark"] {
-  --bg: #202020; --surface: #2b2b2b; --surface-alt: #1a1a1a; --text: #f0f0f0; --text-2: #aaaaaa;
-  --border: #3c3c3c; --accent: #00b7ff; --accent-text: #0d0d0d; --play: #18a018; --danger: #e04a3a;
-  --list-text: #7CFC00; --warm: #ffa500; --shadow: 0 -4px 20px rgba(0,0,0,.5);
-}
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; background: var(--bg); color: var(--text); }
-body {
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; font-size: 16px;
-  padding-top: env(safe-area-inset-top); min-height: 100dvh;
-}
-button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
-[hidden] { display: none !important; }
-header {
-  position: sticky; top: 0; z-index: 5; background: var(--bg);
-  padding: 10px 16px 8px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
-  border-bottom: 1px solid var(--border);
-}
-.top { display: flex; align-items: center; gap: 12px; }
-.logo { height: 52px; width: auto; flex: 0 1 auto; min-width: 0; object-fit: contain; object-position: left; }
-.logo-dark { display: none; }
-html[data-theme="dark"] .logo-light, html[data-theme="neon"] .logo-light { display: none; }
-html[data-theme="dark"] .logo-dark, html[data-theme="neon"] .logo-dark { display: block; }
-.logo-theme { display: none; }
-html[data-logo] .logo-light, html[data-logo] .logo-dark { display: none; }
-html[data-logo] .logo-theme { display: block; }
-.spacer { flex: 1; }
-.icon-btn {
-  width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
-  background: var(--surface-alt); color: var(--text); flex: 0 0 auto;
-}
-.icon-btn svg { width: 22px; height: 22px; }
-.top .icon-btn + .icon-btn { margin-left: -4px; }
-#airplayBtn.active { color: var(--accent); }
-.search {
-  margin-top: 10px; display: flex; align-items: center; gap: 8px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px; padding: 0 12px;
-}
-.search svg { width: 18px; height: 18px; color: var(--text-2); flex: 0 0 auto; }
-.search input {
-  flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; padding: 11px 0;
-  font-size: 16px; min-width: 0;
-}
-.chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 2px; scrollbar-width: none; }
-.chips::-webkit-scrollbar { display: none; }
-.chip {
-  flex: 0 0 auto; padding: 7px 14px; border-radius: 999px; background: var(--surface-alt);
-  color: var(--text); font-size: 14px; white-space: nowrap; border: 1px solid transparent;
-}
-.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
-.count { color: var(--text-2); font-size: 13px; padding: 8px 16px 0; padding-left: max(16px, env(safe-area-inset-left)); }
-main { padding: 4px 0 calc(150px + env(safe-area-inset-bottom)); }
-ul { list-style: none; margin: 0; padding: 0; }
-.station {
-  display: flex; align-items: center; gap: 12px; padding: 10px 16px; min-height: 60px;
-  padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right));
-  border-bottom: 1px solid var(--border); cursor: pointer;
-}
-.station:active { background: var(--surface-alt); }
-.station .id { font-family: Consolas, ui-monospace, monospace; color: var(--text-2); font-size: 13px; width: 28px; flex: 0 0 auto; }
-.station .info { flex: 1; min-width: 0; }
-.station .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-.station .genre { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.station.playing .name { color: var(--list-text); font-weight: 700; }
-.station.playing .genre.song { color: var(--text); }
-.station.failed .name { color: var(--danger); text-decoration: line-through; }
-.st-logo {
-  width: 40px; height: 40px; border-radius: 9px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden;
-  background: #ffffff; border: 1px solid var(--border);
-}
-.st-logo img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
-.st-logo.initials { border: 0; color: #ffffff; font-weight: 700; font-size: 14px; letter-spacing: .5px; }
-.player .st-logo { width: 52px; height: 52px; border-radius: 11px; font-size: 17px; }
-.fav { width: 44px; height: 44px; display: grid; place-items: center; color: var(--text-2); flex: 0 0 auto; }
-.fav svg { width: 22px; height: 22px; }
-.fav[aria-pressed="true"] { color: var(--warm); }
-.eq { display: none; gap: 2px; align-items: flex-end; height: 16px; flex: 0 0 auto; }
-.station.playing .eq { display: flex; }
-.eq i { width: 3px; background: var(--list-text); animation: eq 0.9s ease-in-out infinite; }
-.eq i:nth-child(2) { animation-delay: -0.3s; } .eq i:nth-child(3) { animation-delay: -0.6s; }
-.paused .eq i { animation-play-state: paused; }
-@keyframes eq { 0%,100% { height: 4px; } 50% { height: 16px; } }
-.empty { text-align: center; color: var(--text-2); padding: 40px 20px; }
-.empty button { margin-top: 12px; padding: 10px 18px; border-radius: 10px; background: var(--surface-alt); font-weight: 600; }
-.player {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); box-shadow: var(--shadow);
-  border-top: 1px solid var(--border);
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
-}
-.player-row { display: flex; align-items: center; gap: 12px; }
-.now { flex: 1; min-width: 0; }
-.now .title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.now .status { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.now .status.err { color: var(--danger); }
-.now .status.ok { color: var(--play); }
-.now .status b { color: var(--text); font-weight: 600; }
-.play-btn {
-  width: 52px; height: 52px; border-radius: 50%; background: var(--play); color: #fff; display: grid; place-items: center; flex: 0 0 auto;
-}
-.play-btn:disabled { opacity: .45; }
-.play-btn svg { width: 26px; height: 26px; }
-.round { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-alt); display: grid; place-items: center; flex: 0 0 auto; }
-.round svg { width: 22px; height: 22px; }
-.volume { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--text-2); font-size: 13px; }
-.volume input { flex: 1; accent-color: var(--accent); }
-.volume .ios-hint { flex: 1; }
-.sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: none; }
-.sheet {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--surface); border-radius: 18px 18px 0 0;
-  max-width: 600px; margin: 0 auto; max-height: calc(100dvh - 24px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain;
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom)); display: none;
-}
-.sheet.open, .sheet-backdrop.open { display: block; }
-.sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 16px 0 12px; background: inherit; }
-.sheet-head h2 { margin: 0; flex: 1; font-size: 22px; font-weight: 700; color: var(--accent); }
-html[data-fx] .sheet-head h2 { text-shadow: 0 0 12px var(--glow-a); }
-.card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
-.card h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 16px; }
-.card h3 svg, .info-row > svg { width: 20px; height: 20px; flex: 0 0 auto; color: var(--accent); }
-.hint { color: var(--text-2); font-size: 12.5px; line-height: 1.45; margin: 10px 0 0; }
-.theme-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.theme-chips button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
-.theme-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
-.dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .25); flex: 0 0 auto; }
-.field { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px 10px; }
-.field label { color: var(--text-2); font-size: 14px; }
-.field input {
-  width: 100%; min-width: 0; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
-  border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; outline: 0;
-}
-.field input:focus { border-color: var(--accent); }
-.field input[readonly] { width: 90px; color: var(--text-2); font-family: Consolas, ui-monospace, monospace; }
-html[data-fx] .field input { border-color: var(--fx-input-line); }
-.genre-tips { grid-column: 2; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-.genre-tips::-webkit-scrollbar { display: none; }
-.genre-tips button { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; color: var(--text-2); }
-.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 14px; }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); }
-.btn svg { width: 16px; height: 16px; }
-.btn.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; }
-html[data-fx] .btn.primary { background: var(--fx-chip); box-shadow: 0 0 12px var(--glow-a); }
-.add-status { font-size: 13px; color: var(--text-2); flex: 1 1 200px; }
-.add-status.ok { color: var(--list-text); } .add-status.err { color: var(--danger); } .add-status.warn { color: var(--warm); }
-.own-list { margin-top: 14px; border-top: 1px solid var(--border); }
-.own-list h4 { margin: 12px 0 4px; font-size: 13px; color: var(--text-2); font-weight: 600; }
-.own-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.own-row .st-logo { width: 32px; height: 32px; border-radius: 8px; font-size: 12px; }
-.own-row .info { flex: 1; min-width: 0; }
-.own-row .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.own-row .url { font-size: 11.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.own-row .del { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; color: var(--danger); flex: 0 0 auto; }
-.own-row .del svg { width: 18px; height: 18px; }
-.info-row { display: flex; gap: 12px; padding: 8px 0; }
-.info-row + .info-row { border-top: 1px solid var(--border); }
-.info-row b { display: block; font-size: 14px; margin-bottom: 2px; }
-.info-row span { display: block; color: var(--text-2); font-size: 12.5px; line-height: 1.45; }
-.sheet-foot { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
-.version { flex: 1; color: var(--text-2); font-size: 12px; }
-/* Effekt-Designs (wie Desktop-Version): Farben und Effekte über Variablen, gemeinsame Regeln über data-fx */
-html[data-theme="neon"] {
-  --bg: #0a0614; --surface: rgba(18, 10, 38, .88); --surface-alt: rgba(42, 26, 82, .55); --text: #eafcff; --text-2: #9ea6cf;
-  --border: rgba(138, 92, 255, .28); --accent: #19f0ff; --accent-text: #05020c; --play: #ff2bd6; --danger: #ff4d6d;
-  --list-text: #19f0ff; --warm: #ffd23f; --shadow: 0 -8px 32px rgba(255, 43, 214, .22);
-  --fx-chip: linear-gradient(90deg, #19f0ff, #8a5cff 60%, #ff2bd6); --fx-play: linear-gradient(135deg, #ff2bd6, #8a5cff);
-  --fx-line: linear-gradient(90deg, #19f0ff, #8a5cff, #ff2bd6); --fx-row: linear-gradient(90deg, rgba(25, 240, 255, .10), rgba(255, 43, 214, .06) 70%, transparent);
-  --glow-a: rgba(25, 240, 255, .7); --glow-p: rgba(255, 43, 214, .6); --fx-btn-line: rgba(25, 240, 255, .25); --fx-input-line: rgba(25, 240, 255, .35);
-  --fx-slider: #ff2bd6; --fx-header: rgba(10, 6, 20, .72); --fx-sheet: #120a26;
-  --fx-bg:
-    radial-gradient(55vmax 45vmax at 105% -5%, rgba(255, 43, 214, .26), transparent 62%),
-    radial-gradient(50vmax 50vmax at -15% 45%, rgba(25, 240, 255, .17), transparent 60%),
-    radial-gradient(45vmax 40vmax at 75% 105%, rgba(138, 92, 255, .30), transparent 62%),
-    linear-gradient(rgba(138, 92, 255, .07) 1px, transparent 1px) 0 0 / 100% 44px,
-    linear-gradient(90deg, rgba(138, 92, 255, .07) 1px, transparent 1px) 0 0 / 44px 100%,
-    #0a0614;
-}
-html[data-theme="sunset"] {
-  --bg: #2a0410; --surface: rgba(42, 6, 16, .80); --surface-alt: rgba(58, 8, 20, .70); --text: #fff4e6; --text-2: #f2bfa4;
-  --border: rgba(255, 154, 74, .25); --accent: #ffb030; --accent-text: #2a0410; --play: #ff5a1e; --danger: #ff6b5a;
-  --list-text: #ffc24a; --warm: #ffd04a; --shadow: 0 -8px 32px rgba(255, 90, 30, .28);
-  --fx-chip: linear-gradient(135deg, #ffd04a, #ff8a1e, #e2461c, #a3151f); --fx-play: linear-gradient(135deg, #ffd04a, #ff5a1e, #8e0f22);
-  --fx-line: linear-gradient(90deg, #ffd04a, #ff8a1e, #e2461c, #a3151f); --fx-row: linear-gradient(135deg, rgba(255, 138, 30, .20), rgba(226, 70, 28, .08), transparent);
-  --glow-a: rgba(255, 138, 30, .7); --glow-p: rgba(255, 90, 30, .7); --fx-btn-line: rgba(255, 154, 74, .40); --fx-input-line: rgba(255, 154, 74, .50);
-  --fx-slider: #ff8a1e; --fx-header: rgba(42, 4, 16, .70); --fx-sheet: #2e0612; --fx-list: rgba(42, 4, 16, .22);
-  --fx-frame: linear-gradient(135deg, #ffe07a, #ff9a2a, #e2461c, #b01828);
-  --fx-bg: linear-gradient(rgba(42, 4, 16, .30), rgba(42, 4, 16, .62)), url("themes/Sonnenuntergang.jpg") 68% center / cover no-repeat, #2a0410;
-}
-html[data-theme="thermofin"] {
-  --bg: #0b1b38; --surface: rgba(11, 27, 56, .80); --surface-alt: rgba(16, 36, 72, .70); --text: #f2f5fa; --text-2: #a9b6cb;
-  --border: rgba(184, 194, 209, .25); --accent: #e3263b; --accent-text: #ffffff; --play: #e3263b; --danger: #ff5a6a;
-  --list-text: #ff6b7a; --warm: #f2b705; --shadow: 0 -8px 32px rgba(0, 0, 0, .35);
-  --fx-chip: linear-gradient(90deg, #e3263b, #b8172c); --fx-play: linear-gradient(135deg, #f0384c, #b8172c);
-  --fx-line: linear-gradient(90deg, #b8c2d1, #ffffff, #e3263b); --fx-row: linear-gradient(90deg, rgba(227, 38, 59, .20), rgba(27, 58, 107, .08), transparent);
-  --glow-a: rgba(227, 38, 59, .35); --glow-p: rgba(227, 38, 59, .5); --fx-btn-line: rgba(184, 194, 209, .47); --fx-input-line: rgba(184, 194, 209, .55);
-  --fx-slider: #e3263b; --fx-header: rgba(11, 27, 56, .72); --fx-sheet: #0f2246; --fx-list: rgba(11, 27, 56, .55);
-  --fx-bg: linear-gradient(rgba(11, 27, 56, .45), rgba(11, 27, 56, .70)), url("themes/Thermofin.jpg") 62% center / cover no-repeat, #0b1b38;
-}
-@property --cyc0 { syntax: "<color>"; inherits: true; initial-value: #ffe600; }
-@property --cyc1 { syntax: "<color>"; inherits: true; initial-value: #7cff1e; }
-@property --cyc2 { syntax: "<color>"; inherits: true; initial-value: #19b8ff; }
-@property --cyc3 { syntax: "<color>"; inherits: true; initial-value: #ff2e97; }
-@keyframes cyc0 { 0% { --cyc0: #ffe600; } 25% { --cyc0: #7cff1e; } 50% { --cyc0: #19b8ff; } 75% { --cyc0: #ff2e97; } 100% { --cyc0: #ffe600; } }
-@keyframes cyc1 { 0% { --cyc1: #7cff1e; } 25% { --cyc1: #19b8ff; } 50% { --cyc1: #ff2e97; } 75% { --cyc1: #ffe600; } 100% { --cyc1: #7cff1e; } }
-@keyframes cyc2 { 0% { --cyc2: #19b8ff; } 25% { --cyc2: #ff2e97; } 50% { --cyc2: #ffe600; } 75% { --cyc2: #7cff1e; } 100% { --cyc2: #19b8ff; } }
-@keyframes cyc3 { 0% { --cyc3: #ff2e97; } 25% { --cyc3: #ffe600; } 50% { --cyc3: #7cff1e; } 75% { --cyc3: #19b8ff; } 100% { --cyc3: #ff2e97; } }
-html[data-theme="abstrakt"] {
-  animation: cyc0 15s linear infinite, cyc1 15s linear infinite, cyc2 15s linear infinite, cyc3 15s linear infinite;
-  --bg: #05060f; --surface: rgba(10, 12, 22, .80); --surface-alt: rgba(20, 24, 36, .63); --text: #f7fff2; --text-2: #aeb7c8;
-  --border: rgba(255, 255, 255, .20); --accent: var(--cyc0); --accent-text: #06070f; --play: #ff2e97; --danger: #ff4d6d;
-  --list-text: var(--cyc0); --warm: #ffe600; --shadow: 0 -8px 32px rgba(0, 0, 0, .45);
-  --fx-chip: linear-gradient(90deg, var(--cyc0), var(--cyc1)); --fx-play: linear-gradient(135deg, var(--cyc2), var(--cyc3));
-  --fx-line: linear-gradient(90deg, var(--cyc0), var(--cyc1), var(--cyc2), var(--cyc3));
-  --fx-row: linear-gradient(90deg, color-mix(in srgb, var(--cyc0) 18%, transparent), color-mix(in srgb, var(--cyc0) 6%, transparent) 70%, transparent);
-  --glow-a: color-mix(in srgb, var(--cyc0) 70%, transparent); --glow-p: color-mix(in srgb, var(--cyc3) 70%, transparent);
-  --fx-btn-line: color-mix(in srgb, var(--cyc0) 40%, transparent); --fx-input-line: color-mix(in srgb, var(--cyc0) 50%, transparent);
-  --fx-slider: var(--cyc3); --fx-header: rgba(5, 6, 15, .70); --fx-sheet: #0a0c16; --fx-list: rgba(5, 6, 15, .22);
-  --fx-bg: linear-gradient(rgba(5, 6, 15, .30), rgba(5, 6, 15, .55)), url("themes/Abstrakt.jpg") center / cover no-repeat, #05060f;
-}
-@media (prefers-reduced-motion: reduce) { html[data-theme="abstrakt"] { animation: none; } }
-html[data-fx] body { background: transparent; }
-html[data-fx] { background: var(--bg); }
-html[data-fx] body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--fx-bg); }
-html[data-fx] header { background: var(--fx-header); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom-color: var(--fx-btn-line); }
-html[data-fx] .search { background: var(--surface); border-color: var(--fx-input-line); }
-html[data-fx] .search:focus-within { box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--glow-a); }
-html[data-fx] .chips { padding: 10px 6px 6px; margin: 0 -6px; }
-html[data-fx] .chip { background: var(--surface-alt); }
-html[data-fx] .chip[aria-pressed="true"], html[data-fx] .theme-chips button[aria-pressed="true"] { background: var(--fx-chip); color: var(--accent-text); box-shadow: 0 0 14px var(--glow-a); }
-html[data-fx] .station { background-color: var(--fx-list, transparent); }
-html[data-fx] .station.playing { background: var(--fx-row); background-color: var(--fx-list, transparent); box-shadow: inset 3px 0 0 var(--accent); }
-html[data-fx] .station.playing .name { text-shadow: 0 0 10px var(--glow-a); }
-html[data-fx] .eq i { box-shadow: 0 0 6px var(--glow-a); }
-html[data-fx] .fav[aria-pressed="true"] { filter: drop-shadow(0 0 6px var(--warm)); }
-html[data-fx] .st-logo { border-color: var(--fx-btn-line); box-shadow: 0 0 10px var(--glow-a); }
-html[data-fx] .player { background: var(--surface); border-top: 1px solid transparent; border-image: var(--fx-line) 1; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
-html[data-fx] .play-btn { background: var(--fx-play); box-shadow: 0 0 18px var(--glow-p), 0 0 4px var(--glow-p); }
-html[data-fx] .now .status.ok { color: var(--accent); text-shadow: 0 0 8px var(--glow-a); }
-html[data-fx] .now .status b { color: #ffffff; }
-html[data-fx] .volume input { accent-color: var(--fx-slider); }
-html[data-fx] .icon-btn, html[data-fx] .round { background: var(--surface-alt); box-shadow: inset 0 0 0 1px var(--fx-btn-line); }
-html[data-fx] .card { background: color-mix(in srgb, var(--fx-sheet) 70%, #ffffff 4%); border-color: var(--border); }
-html[data-fx] .sheet { background: var(--fx-sheet); border-top: 1px solid var(--fx-input-line); box-shadow: 0 -10px 40px var(--glow-a); }
-/* Sonnenuntergang: glühende Verlaufsrahmen */
-html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[data-theme="sunset"] .round, html[data-theme="sunset"] .chip:not([aria-pressed="true"]) {
-  border: 2px solid transparent; background: linear-gradient(var(--fx-sheet), var(--fx-sheet)) padding-box, var(--fx-frame) border-box; box-shadow: 0 0 12px rgba(255, 138, 30, .45);
-}
-</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>DWH’s Jukebox</title>
+    <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)" data-orig="#202020">
+    <meta name="theme-color" content="#f8f9fb" media="(prefers-color-scheme: light)" data-orig="#f8f9fb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Jukebox">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <style>
+        :root {
+            --bg: #f8f9fb;
+            --surface: #ffffff;
+            --surface-alt: #eef0f3;
+            --text: #202020;
+            --text-2: #646464;
+            --border: #dcdfe4;
+            --accent: #0067c0;
+            --accent-text: #ffffff;
+            --play: #107c10;
+            --danger: #c42b1c;
+            --list-text: #006400;
+            --warm: #be5f00;
+            --shadow: 0 -4px 20px rgba(0,0,0,.08);
+        }
+
+        html[data-theme="dark"] {
+            --bg: #202020;
+            --surface: #2b2b2b;
+            --surface-alt: #1a1a1a;
+            --text: #f0f0f0;
+            --text-2: #aaaaaa;
+            --border: #3c3c3c;
+            --accent: #00b7ff;
+            --accent-text: #0d0d0d;
+            --play: #18a018;
+            --danger: #e04a3a;
+            --list-text: #7CFC00;
+            --warm: #ffa500;
+            --shadow: 0 -4px 20px rgba(0,0,0,.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+            font-size: 16px;
+            padding-top: env(safe-area-inset-top);
+            min-height: 100dvh;
+        }
+
+        button {
+            font: inherit;
+            color: inherit;
+            border: 0;
+            background: none;
+            cursor: pointer;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: var(--bg);
+            padding: 10px 16px 8px;
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+            border-bottom: 1px solid var(--border);
+        }
+
+        .top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            height: 52px;
+            width: auto;
+            flex: 0 1 auto;
+            min-width: 0;
+            object-fit: contain;
+            object-position: left;
+        }
+
+        .logo-dark {
+            display: none;
+        }
+
+        html[data-theme="dark"] .logo-light, html[data-theme="neon"] .logo-light {
+            display: none;
+        }
+
+        html[data-theme="dark"] .logo-dark, html[data-theme="neon"] .logo-dark {
+            display: block;
+        }
+
+        .logo-theme {
+            display: none;
+        }
+
+        html[data-logo] .logo-light, html[data-logo] .logo-dark {
+            display: none;
+        }
+
+        html[data-logo] .logo-theme {
+            display: block;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            background: var(--surface-alt);
+            color: var(--text);
+            flex: 0 0 auto;
+        }
+
+            .icon-btn svg {
+                width: 22px;
+                height: 22px;
+            }
+
+        .top .icon-btn + .icon-btn {
+            margin-left: -4px;
+        }
+
+        #airplayBtn.active {
+            color: var(--accent);
+        }
+
+        .search {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0 12px;
+        }
+
+            .search svg {
+                width: 18px;
+                height: 18px;
+                color: var(--text-2);
+                flex: 0 0 auto;
+            }
+
+            .search input {
+                flex: 1;
+                border: 0;
+                outline: 0;
+                background: transparent;
+                color: var(--text);
+                font: inherit;
+                padding: 11px 0;
+                font-size: 16px;
+                min-width: 0;
+            }
+
+        .chips {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 0 2px;
+            scrollbar-width: none;
+        }
+
+            .chips::-webkit-scrollbar {
+                display: none;
+            }
+
+        .chip {
+            flex: 0 0 auto;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: var(--surface-alt);
+            color: var(--text);
+            font-size: 14px;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+
+            .chip[aria-pressed="true"] {
+                background: var(--accent);
+                color: var(--accent-text);
+                font-weight: 600;
+            }
+
+        .count {
+            color: var(--text-2);
+            font-size: 13px;
+            padding: 8px 16px 0;
+            padding-left: max(16px, env(safe-area-inset-left));
+        }
+
+        main {
+            padding: 4px 0 calc(150px + env(safe-area-inset-bottom));
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .station {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            min-height: 60px;
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(8px, env(safe-area-inset-right));
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+            .station:active {
+                background: var(--surface-alt);
+            }
+
+            .station .id {
+                font-family: Consolas, ui-monospace, monospace;
+                color: var(--text-2);
+                font-size: 13px;
+                width: 28px;
+                flex: 0 0 auto;
+            }
+
+            .station .info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .station .name {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-weight: 500;
+            }
+
+            .station .genre {
+                font-size: 13px;
+                color: var(--text-2);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .station.playing .name {
+                color: var(--list-text);
+                font-weight: 700;
+            }
+
+            .station.playing .genre.song {
+                color: var(--text);
+            }
+
+            .station.failed .name {
+                color: var(--danger);
+                text-decoration: line-through;
+            }
+
+        .st-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 9px;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid var(--border);
+        }
+
+            .st-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                padding: 3px;
+            }
+
+            .st-logo.initials {
+                border: 0;
+                color: #ffffff;
+                font-weight: 700;
+                font-size: 14px;
+                letter-spacing: .5px;
+            }
+
+        .player .st-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 11px;
+            font-size: 17px;
+        }
+
+        .fav {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: var(--text-2);
+            flex: 0 0 auto;
+        }
+
+            .fav svg {
+                width: 22px;
+                height: 22px;
+            }
+
+            .fav[aria-pressed="true"] {
+                color: var(--warm);
+            }
+
+        .eq {
+            display: none;
+            gap: 2px;
+            align-items: flex-end;
+            height: 16px;
+            flex: 0 0 auto;
+        }
+
+        .station.playing .eq {
+            display: flex;
+        }
+
+        .eq i {
+            width: 3px;
+            background: var(--list-text);
+            animation: eq 0.9s ease-in-out infinite;
+        }
+
+            .eq i:nth-child(2) {
+                animation-delay: -0.3s;
+            }
+
+            .eq i:nth-child(3) {
+                animation-delay: -0.6s;
+            }
+
+        .paused .eq i {
+            animation-play-state: paused;
+        }
+
+        @keyframes eq {
+            0%,100% {
+                height: 4px;
+            }
+
+            50% {
+                height: 16px;
+            }
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--text-2);
+            padding: 40px 20px;
+        }
+
+            .empty button {
+                margin-top: 12px;
+                padding: 10px 18px;
+                border-radius: 10px;
+                background: var(--surface-alt);
+                font-weight: 600;
+            }
+
+        .player {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .now {
+            flex: 1;
+            min-width: 0;
+        }
+
+            .now .title {
+                font-weight: 700;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .now .status {
+                font-size: 13px;
+                color: var(--text-2);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+                .now .status.err {
+                    color: var(--danger);
+                }
+
+                .now .status.ok {
+                    color: var(--play);
+                }
+
+                .now .status b {
+                    color: var(--text);
+                    font-weight: 600;
+                }
+
+        .play-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--play);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+        }
+
+            .play-btn:disabled {
+                opacity: .45;
+            }
+
+            .play-btn svg {
+                width: 26px;
+                height: 26px;
+            }
+
+        .round {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--surface-alt);
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+        }
+
+            .round svg {
+                width: 22px;
+                height: 22px;
+            }
+
+        .volume {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            color: var(--text-2);
+            font-size: 13px;
+        }
+
+            .volume input {
+                flex: 1;
+                accent-color: var(--accent);
+            }
+
+            .volume .ios-hint {
+                flex: 1;
+            }
+
+        .sheet-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.4);
+            z-index: 20;
+            display: none;
+        }
+
+        .sheet {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 21;
+            background: var(--surface);
+            border-radius: 18px 18px 0 0;
+            max-width: 600px;
+            margin: 0 auto;
+            max-height: calc(100dvh - 24px - env(safe-area-inset-top));
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+            display: none;
+        }
+
+            .sheet.open, .sheet-backdrop.open {
+                display: block;
+            }
+
+        .sheet-head {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 0 12px;
+            background: inherit;
+        }
+
+            .sheet-head h2 {
+                margin: 0;
+                flex: 1;
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--accent);
+            }
+
+        html[data-fx] .sheet-head h2 {
+            text-shadow: 0 0 12px var(--glow-a);
+        }
+
+        .card {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+            .card h3 {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin: 0 0 12px;
+                font-size: 16px;
+            }
+
+                .card h3 svg, .info-row > svg {
+                    width: 20px;
+                    height: 20px;
+                    flex: 0 0 auto;
+                    color: var(--accent);
+                }
+
+        .hint {
+            color: var(--text-2);
+            font-size: 12.5px;
+            line-height: 1.45;
+            margin: 10px 0 0;
+        }
+
+        .theme-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+            .theme-chips button {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 14px 8px 10px;
+                border-radius: 999px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                font-size: 14px;
+            }
+
+                .theme-chips button[aria-pressed="true"] {
+                    background: var(--accent);
+                    color: var(--accent-text);
+                    border-color: transparent;
+                    font-weight: 600;
+                }
+
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, .25);
+            flex: 0 0 auto;
+        }
+
+        .field {
+            display: grid;
+            grid-template-columns: 64px 1fr;
+            align-items: center;
+            gap: 8px 10px;
+        }
+
+            .field label {
+                color: var(--text-2);
+                font-size: 14px;
+            }
+
+            .field input {
+                width: 100%;
+                min-width: 0;
+                font: inherit;
+                font-size: 16px;
+                color: var(--text);
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 9px 12px;
+                outline: 0;
+            }
+
+                .field input:focus {
+                    border-color: var(--accent);
+                }
+
+                .field input[readonly] {
+                    width: 90px;
+                    color: var(--text-2);
+                    font-family: Consolas, ui-monospace, monospace;
+                }
+
+        html[data-fx] .field input {
+            border-color: var(--fx-input-line);
+        }
+
+        .genre-tips {
+            grid-column: 2;
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+
+            .genre-tips::-webkit-scrollbar {
+                display: none;
+            }
+
+            .genre-tips button {
+                flex: 0 0 auto;
+                padding: 4px 10px;
+                border-radius: 999px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                font-size: 12.5px;
+                color: var(--text-2);
+            }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            margin-top: 14px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+            .btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .btn.primary {
+                background: var(--accent);
+                color: var(--accent-text);
+                border-color: transparent;
+            }
+
+        html[data-fx] .btn.primary {
+            background: var(--fx-chip);
+            box-shadow: 0 0 12px var(--glow-a);
+        }
+
+        .add-status {
+            font-size: 13px;
+            color: var(--text-2);
+            flex: 1 1 200px;
+        }
+
+            .add-status.ok {
+                color: var(--list-text);
+            }
+
+            .add-status.err {
+                color: var(--danger);
+            }
+
+            .add-status.warn {
+                color: var(--warm);
+            }
+
+        .own-list {
+            margin-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+            .own-list h4 {
+                margin: 12px 0 4px;
+                font-size: 13px;
+                color: var(--text-2);
+                font-weight: 600;
+            }
+
+        .own-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+            .own-row .st-logo {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+
+            .own-row .info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .own-row .name {
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .own-row .url {
+                font-size: 11.5px;
+                color: var(--text-2);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .own-row .del {
+                width: 36px;
+                height: 36px;
+                border-radius: 9px;
+                display: grid;
+                place-items: center;
+                color: var(--danger);
+                flex: 0 0 auto;
+            }
+
+                .own-row .del svg {
+                    width: 18px;
+                    height: 18px;
+                }
+
+        .info-row {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+            .info-row + .info-row {
+                border-top: 1px solid var(--border);
+            }
+
+            .info-row b {
+                display: block;
+                font-size: 14px;
+                margin-bottom: 2px;
+            }
+
+            .info-row span {
+                display: block;
+                color: var(--text-2);
+                font-size: 12.5px;
+                line-height: 1.45;
+            }
+
+        .sheet-foot {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .version {
+            flex: 1;
+            color: var(--text-2);
+            font-size: 12px;
+        }
+        /* Effekt-Designs (wie Desktop-Version): Farben und Effekte über Variablen, gemeinsame Regeln über data-fx */
+        html[data-theme="neon"] {
+            --bg: #0a0614;
+            --surface: rgba(18, 10, 38, .88);
+            --surface-alt: rgba(42, 26, 82, .55);
+            --text: #eafcff;
+            --text-2: #9ea6cf;
+            --border: rgba(138, 92, 255, .28);
+            --accent: #19f0ff;
+            --accent-text: #05020c;
+            --play: #ff2bd6;
+            --danger: #ff4d6d;
+            --list-text: #19f0ff;
+            --warm: #ffd23f;
+            --shadow: 0 -8px 32px rgba(255, 43, 214, .22);
+            --fx-chip: linear-gradient(90deg, #19f0ff, #8a5cff 60%, #ff2bd6);
+            --fx-play: linear-gradient(135deg, #ff2bd6, #8a5cff);
+            --fx-line: linear-gradient(90deg, #19f0ff, #8a5cff, #ff2bd6);
+            --fx-row: linear-gradient(90deg, rgba(25, 240, 255, .10), rgba(255, 43, 214, .06) 70%, transparent);
+            --glow-a: rgba(25, 240, 255, .7);
+            --glow-p: rgba(255, 43, 214, .6);
+            --fx-btn-line: rgba(25, 240, 255, .25);
+            --fx-input-line: rgba(25, 240, 255, .35);
+            --fx-slider: #ff2bd6;
+            --fx-header: rgba(10, 6, 20, .72);
+            --fx-sheet: #120a26;
+            --fx-bg: radial-gradient(55vmax 45vmax at 105% -5%, rgba(255, 43, 214, .26), transparent 62%), radial-gradient(50vmax 50vmax at -15% 45%, rgba(25, 240, 255, .17), transparent 60%), radial-gradient(45vmax 40vmax at 75% 105%, rgba(138, 92, 255, .30), transparent 62%), linear-gradient(rgba(138, 92, 255, .07) 1px, transparent 1px) 0 0 / 100% 44px, linear-gradient(90deg, rgba(138, 92, 255, .07) 1px, transparent 1px) 0 0 / 44px 100%, #0a0614;
+        }
+
+        html[data-theme="sunset"] {
+            --bg: #2a0410;
+            --surface: rgba(42, 6, 16, .80);
+            --surface-alt: rgba(58, 8, 20, .70);
+            --text: #fff4e6;
+            --text-2: #f2bfa4;
+            --border: rgba(255, 154, 74, .25);
+            --accent: #ffb030;
+            --accent-text: #2a0410;
+            --play: #ff5a1e;
+            --danger: #ff6b5a;
+            --list-text: #ffc24a;
+            --warm: #ffd04a;
+            --shadow: 0 -8px 32px rgba(255, 90, 30, .28);
+            --fx-chip: linear-gradient(135deg, #ffd04a, #ff8a1e, #e2461c, #a3151f);
+            --fx-play: linear-gradient(135deg, #ffd04a, #ff5a1e, #8e0f22);
+            --fx-line: linear-gradient(90deg, #ffd04a, #ff8a1e, #e2461c, #a3151f);
+            --fx-row: linear-gradient(135deg, rgba(255, 138, 30, .20), rgba(226, 70, 28, .08), transparent);
+            --glow-a: rgba(255, 138, 30, .7);
+            --glow-p: rgba(255, 90, 30, .7);
+            --fx-btn-line: rgba(255, 154, 74, .40);
+            --fx-input-line: rgba(255, 154, 74, .50);
+            --fx-slider: #ff8a1e;
+            --fx-header: rgba(42, 4, 16, .70);
+            --fx-sheet: #2e0612;
+            --fx-list: rgba(42, 4, 16, .22);
+            --fx-frame: linear-gradient(135deg, #ffe07a, #ff9a2a, #e2461c, #b01828);
+            --fx-bg: linear-gradient(rgba(42, 4, 16, .30), rgba(42, 4, 16, .62)), url("themes/Sonnenuntergang.jpg") 68% center / cover no-repeat, #2a0410;
+        }
+
+        html[data-theme="thermofin"] {
+            --bg: #0b1b38;
+            --surface: rgba(11, 27, 56, .80);
+            --surface-alt: rgba(16, 36, 72, .70);
+            --text: #f2f5fa;
+            --text-2: #a9b6cb;
+            --border: rgba(184, 194, 209, .25);
+            --accent: #e3263b;
+            --accent-text: #ffffff;
+            --play: #e3263b;
+            --danger: #ff5a6a;
+            --list-text: #ff6b7a;
+            --warm: #f2b705;
+            --shadow: 0 -8px 32px rgba(0, 0, 0, .35);
+            --fx-chip: linear-gradient(90deg, #e3263b, #b8172c);
+            --fx-play: linear-gradient(135deg, #f0384c, #b8172c);
+            --fx-line: linear-gradient(90deg, #b8c2d1, #ffffff, #e3263b);
+            --fx-row: linear-gradient(90deg, rgba(227, 38, 59, .20), rgba(27, 58, 107, .08), transparent);
+            --glow-a: rgba(227, 38, 59, .35);
+            --glow-p: rgba(227, 38, 59, .5);
+            --fx-btn-line: rgba(184, 194, 209, .47);
+            --fx-input-line: rgba(184, 194, 209, .55);
+            --fx-slider: #e3263b;
+            --fx-header: rgba(11, 27, 56, .72);
+            --fx-sheet: #0f2246;
+            --fx-list: rgba(11, 27, 56, .55);
+            --fx-bg: linear-gradient(rgba(11, 27, 56, .45), rgba(11, 27, 56, .70)), url("themes/Thermofin.jpg") 62% center / cover no-repeat, #0b1b38;
+        }
+
+        @property --cyc0 {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #ffe600;
+        }
+
+        @property --cyc1 {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #7cff1e;
+        }
+
+        @property --cyc2 {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #19b8ff;
+        }
+
+        @property --cyc3 {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #ff2e97;
+        }
+
+        @keyframes cyc0 {
+            0% {
+                --cyc0: #ffe600;
+            }
+
+            25% {
+                --cyc0: #7cff1e;
+            }
+
+            50% {
+                --cyc0: #19b8ff;
+            }
+
+            75% {
+                --cyc0: #ff2e97;
+            }
+
+            100% {
+                --cyc0: #ffe600;
+            }
+        }
+
+        @keyframes cyc1 {
+            0% {
+                --cyc1: #7cff1e;
+            }
+
+            25% {
+                --cyc1: #19b8ff;
+            }
+
+            50% {
+                --cyc1: #ff2e97;
+            }
+
+            75% {
+                --cyc1: #ffe600;
+            }
+
+            100% {
+                --cyc1: #7cff1e;
+            }
+        }
+
+        @keyframes cyc2 {
+            0% {
+                --cyc2: #19b8ff;
+            }
+
+            25% {
+                --cyc2: #ff2e97;
+            }
+
+            50% {
+                --cyc2: #ffe600;
+            }
+
+            75% {
+                --cyc2: #7cff1e;
+            }
+
+            100% {
+                --cyc2: #19b8ff;
+            }
+        }
+
+        @keyframes cyc3 {
+            0% {
+                --cyc3: #ff2e97;
+            }
+
+            25% {
+                --cyc3: #ffe600;
+            }
+
+            50% {
+                --cyc3: #7cff1e;
+            }
+
+            75% {
+                --cyc3: #19b8ff;
+            }
+
+            100% {
+                --cyc3: #ff2e97;
+            }
+        }
+
+        html[data-theme="abstrakt"] {
+            animation: cyc0 15s linear infinite, cyc1 15s linear infinite, cyc2 15s linear infinite, cyc3 15s linear infinite;
+            --bg: #05060f;
+            --surface: rgba(10, 12, 22, .80);
+            --surface-alt: rgba(20, 24, 36, .63);
+            --text: #f7fff2;
+            --text-2: #aeb7c8;
+            --border: rgba(255, 255, 255, .20);
+            --accent: var(--cyc0);
+            --accent-text: #06070f;
+            --play: #ff2e97;
+            --danger: #ff4d6d;
+            --list-text: var(--cyc0);
+            --warm: #ffe600;
+            --shadow: 0 -8px 32px rgba(0, 0, 0, .45);
+            --fx-chip: linear-gradient(90deg, var(--cyc0), var(--cyc1));
+            --fx-play: linear-gradient(135deg, var(--cyc2), var(--cyc3));
+            --fx-line: linear-gradient(90deg, var(--cyc0), var(--cyc1), var(--cyc2), var(--cyc3));
+            --fx-row: linear-gradient(90deg, color-mix(in srgb, var(--cyc0) 18%, transparent), color-mix(in srgb, var(--cyc0) 6%, transparent) 70%, transparent);
+            --glow-a: color-mix(in srgb, var(--cyc0) 70%, transparent);
+            --glow-p: color-mix(in srgb, var(--cyc3) 70%, transparent);
+            --fx-btn-line: color-mix(in srgb, var(--cyc0) 40%, transparent);
+            --fx-input-line: color-mix(in srgb, var(--cyc0) 50%, transparent);
+            --fx-slider: var(--cyc3);
+            --fx-header: rgba(5, 6, 15, .70);
+            --fx-sheet: #0a0c16;
+            --fx-list: rgba(5, 6, 15, .22);
+            --fx-bg: linear-gradient(rgba(5, 6, 15, .30), rgba(5, 6, 15, .55)), url("themes/Abstrakt.jpg") center / cover no-repeat, #05060f;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html[data-theme="abstrakt"] {
+                animation: none;
+            }
+        }
+
+        html[data-fx] body {
+            background: transparent;
+        }
+
+        html[data-fx] {
+            background: var(--bg);
+        }
+
+            html[data-fx] body::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                z-index: -1;
+                pointer-events: none;
+                background: var(--fx-bg);
+            }
+
+            html[data-fx] header {
+                background: var(--fx-header);
+                -webkit-backdrop-filter: blur(14px);
+                backdrop-filter: blur(14px);
+                border-bottom-color: var(--fx-btn-line);
+            }
+
+            html[data-fx] .search {
+                background: var(--surface);
+                border-color: var(--fx-input-line);
+            }
+
+                html[data-fx] .search:focus-within {
+                    box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--glow-a);
+                }
+
+            html[data-fx] .chips {
+                padding: 10px 6px 6px;
+                margin: 0 -6px;
+            }
+
+            html[data-fx] .chip {
+                background: var(--surface-alt);
+            }
+
+                html[data-fx] .chip[aria-pressed="true"], html[data-fx] .theme-chips button[aria-pressed="true"] {
+                    background: var(--fx-chip);
+                    color: var(--accent-text);
+                    box-shadow: 0 0 14px var(--glow-a);
+                }
+
+            html[data-fx] .station {
+                background-color: var(--fx-list, transparent);
+            }
+
+                html[data-fx] .station.playing {
+                    background: var(--fx-row);
+                    background-color: var(--fx-list, transparent);
+                    box-shadow: inset 3px 0 0 var(--accent);
+                }
+
+                    html[data-fx] .station.playing .name {
+                        text-shadow: 0 0 10px var(--glow-a);
+                    }
+
+            html[data-fx] .eq i {
+                box-shadow: 0 0 6px var(--glow-a);
+            }
+
+            html[data-fx] .fav[aria-pressed="true"] {
+                filter: drop-shadow(0 0 6px var(--warm));
+            }
+
+            html[data-fx] .st-logo {
+                border-color: var(--fx-btn-line);
+                box-shadow: 0 0 10px var(--glow-a);
+            }
+
+            html[data-fx] .player {
+                background: var(--surface);
+                border-top: 1px solid transparent;
+                border-image: var(--fx-line) 1;
+                -webkit-backdrop-filter: blur(16px);
+                backdrop-filter: blur(16px);
+            }
+
+            html[data-fx] .play-btn {
+                background: var(--fx-play);
+                box-shadow: 0 0 18px var(--glow-p), 0 0 4px var(--glow-p);
+            }
+
+            html[data-fx] .now .status.ok {
+                color: var(--accent);
+                text-shadow: 0 0 8px var(--glow-a);
+            }
+
+            html[data-fx] .now .status b {
+                color: #ffffff;
+            }
+
+            html[data-fx] .volume input {
+                accent-color: var(--fx-slider);
+            }
+
+            html[data-fx] .icon-btn, html[data-fx] .round {
+                background: var(--surface-alt);
+                box-shadow: inset 0 0 0 1px var(--fx-btn-line);
+            }
+
+            html[data-fx] .card {
+                background: color-mix(in srgb, var(--fx-sheet) 70%, #ffffff 4%);
+                border-color: var(--border);
+            }
+
+            html[data-fx] .sheet {
+                background: var(--fx-sheet);
+                border-top: 1px solid var(--fx-input-line);
+                box-shadow: 0 -10px 40px var(--glow-a);
+            }
+        /* Sonnenuntergang: glühende Verlaufsrahmen */
+        html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[data-theme="sunset"] .round, html[data-theme="sunset"] .chip:not([aria-pressed="true"]) {
+            border: 2px solid transparent;
+            background: linear-gradient(var(--fx-sheet), var(--fx-sheet)) padding-box, var(--fx-frame) border-box;
+            box-shadow: 0 0 12px rgba(255, 138, 30, .45);
+        }
+    </style>
 </head>
 <body>
-<header>
-  <div class="top">
-    <img class="logo logo-light" src="logo.png" alt="DWH’s Jukebox Player">
-    <img class="logo logo-dark" src="logo_dark.png" alt="DWH’s Jukebox Player">
-    <img class="logo logo-theme" id="themeLogo" alt="DWH’s Jukebox Player">
-    <span class="spacer"></span>
-    <button class="icon-btn" id="airplayBtn" aria-label="AirPlay / Bluetooth-Ausgabe wählen" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><path d="m12 15 5 6H7z"/></svg>
-    </button>
-    <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-    </button>
-  </div>
-  <label class="search">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="search" type="search" placeholder="Sender suchen" autocomplete="off" enterkeyhint="search">
-  </label>
-  <div class="chips" id="chips" role="toolbar" aria-label="Genre"></div>
-</header>
+    <header>
+        <div class="top">
+            <img class="logo logo-light" src="logo.png" alt="DWH’s Jukebox Player">
+            <img class="logo logo-dark" src="logo_dark.png" alt="DWH’s Jukebox Player">
+            <img class="logo logo-theme" id="themeLogo" alt="DWH’s Jukebox Player">
+            <span class="spacer"></span>
+            <button class="icon-btn" id="airplayBtn" aria-label="AirPlay / Bluetooth-Ausgabe wählen" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1" /><path d="m12 15 5 6H7z" /></svg>
+            </button>
+            <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+            </button>
+        </div>
+        <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input id="search" type="search" placeholder="Sender suchen" autocomplete="off" enterkeyhint="search">
+        </label>
+        <div class="chips" id="chips" role="toolbar" aria-label="Genre"></div>
+    </header>
 
-<div class="count" id="count"></div>
-<main><ul id="list"><li class="empty">Senderliste wird geladen …</li></ul></main>
+    <div class="count" id="count"></div>
+    <main><ul id="list"><li class="empty">Senderliste wird geladen …</li></ul></main>
 
-<section class="player" aria-label="Wiedergabe">
-  <div class="player-row">
-    <span class="st-logo initials" id="nowLogo" hidden></span>
-    <div class="now">
-      <div class="title" id="nowTitle">Kein Sender gewählt</div>
-      <div class="status" id="nowStatus">Tippe auf einen Sender</div>
-    </div>
-    <button class="round" id="randomBtn" aria-label="Zufallssender">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
-    </button>
-    <button class="play-btn" id="playBtn" aria-label="Abspielen" disabled>
-      <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-    </button>
-  </div>
-  <div class="volume" id="volumeRow">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
-    <input id="volume" type="range" min="0" max="100" value="80" aria-label="Lautstärke">
-    <span id="volumeValue">80 %</span>
-    <span class="ios-hint" id="iosHint" hidden>Lautstärke über die Tasten am iPhone</span>
-  </div>
-</section>
+    <section class="player" aria-label="Wiedergabe">
+        <div class="player-row">
+            <span class="st-logo initials" id="nowLogo" hidden></span>
+            <div class="now">
+                <div class="title" id="nowTitle">Kein Sender gewählt</div>
+                <div class="status" id="nowStatus">Tippe auf einen Sender</div>
+            </div>
+            <button class="round" id="randomBtn" aria-label="Zufallssender">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5" /><path d="M4 20 21 3" /><path d="M21 16v5h-5" /><path d="m15 15 6 6" /><path d="M4 4l5 5" /></svg>
+            </button>
+            <button class="play-btn" id="playBtn" aria-label="Abspielen" disabled>
+                <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            </button>
+        </div>
+        <div class="volume" id="volumeRow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3z" /></svg>
+            <input id="volume" type="range" min="0" max="100" value="80" aria-label="Lautstärke">
+            <span id="volumeValue">80 %</span>
+            <span class="ios-hint" id="iosHint" hidden>Lautstärke über die Tasten am iPhone</span>
+        </div>
+    </section>
 
-<div class="sheet-backdrop" id="backdrop"></div>
-<section class="sheet" id="sheet" role="dialog" aria-label="Einstellungen">
-  <div class="sheet-head">
-    <h2>Einstellungen</h2>
-    <button class="icon-btn" id="closeX" aria-label="Schließen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-  </div>
-  <div class="card">
-    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></svg>Design</h3>
-    <div class="theme-chips" id="themeSeg">
-      <button data-theme="auto"><i class="dot" style="background:linear-gradient(135deg,#f8f9fb 0 50%,#202020 50% 100%)"></i>Auto</button>
-      <button data-theme="light"><i class="dot" style="background:linear-gradient(135deg,#ffffff,#dce6f2)"></i>Hell</button>
-      <button data-theme="dark"><i class="dot" style="background:linear-gradient(135deg,#3c3c3c,#151515)"></i>Dunkel</button>
-      <button data-theme="neon"><i class="dot" style="background:linear-gradient(135deg,#19f0ff,#8a5cff,#ff2bd6)"></i>Neon</button>
-      <button data-theme="abstrakt"><i class="dot" style="background:linear-gradient(135deg,#ffe600,#7cff1e,#19b8ff,#ff2e97)"></i>Abstrakt</button>
-      <button data-theme="sunset"><i class="dot" style="background:linear-gradient(135deg,#ffe066,#ff9a3d,#ff5e7e,#6a2c8c)"></i>Sonnenuntergang</button>
-      <button data-theme="thermofin"><i class="dot" style="background:linear-gradient(135deg,#1b3a6b,#a7b0be,#c8102e)"></i>Thermofin</button>
-    </div>
-    <p class="hint">„Auto“ folgt der Einstellung des Geräts (hell oder dunkel).</p>
-  </div>
-  <div class="card">
-    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>Neuen Radiosender hinzufügen</h3>
-    <div class="field">
-      <label for="newId">ID</label><input id="newId" readonly>
-      <label for="newName">Name</label><input id="newName" autocomplete="off" enterkeyhint="next">
-      <label for="newGenre">Genre</label><input id="newGenre" autocomplete="off" enterkeyhint="next" placeholder="Sonstiges">
-      <div class="genre-tips" id="genreTips"></div>
-      <label for="newUrl">URL</label><input id="newUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" enterkeyhint="done">
-    </div>
-    <div class="actions">
-      <button class="btn primary" id="saveStation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Sender speichern</button>
-      <span class="add-status" id="addStatus"></span>
-    </div>
-    <div class="own-list" id="ownList" hidden><h4>Eigene Sender</h4><div id="ownRows"></div></div>
-    <p class="hint">Eigene Sender werden nur auf diesem Gerät gespeichert. Die Stream-Adresse findest du meist auf der Webseite des Senders oder bei radio-browser.info.</p>
-  </div>
-  <div class="card">
-    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Hinweise</h3>
-    <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><div><b>Als App installieren</b><span>iPhone: in Safari Teilen → „Zum Home-Bildschirm“. Android: in Chrome Menü ⋮ → „App installieren“.</span></div></div>
-    <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><div><b>Titelanzeige</b><span>Titel und Interpret erscheinen, sobald der Sender sie bereitstellt.</span><span id="metaDiag"></span></div></div>
-    <div class="info-row" id="volumeHint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><b>Lautstärke am iPhone</b><span>Apple lässt keine Lautstärkeregelung durch Webseiten zu – bitte die Tasten am iPhone oder das Kontrollzentrum verwenden.</span></div></div>
-  </div>
-  <div class="sheet-foot">
-    <span class="version" id="version"></span>
-    <button class="btn" id="closeSheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Schließen</button>
-  </div>
-</section>
+    <div class="sheet-backdrop" id="backdrop"></div>
+    <section class="sheet" id="sheet" role="dialog" aria-label="Einstellungen">
+        <div class="sheet-head">
+            <h2>Einstellungen</h2>
+            <button class="icon-btn" id="closeX" aria-label="Schließen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+        </div>
+        <div class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5" /><circle cx="17.5" cy="10.5" r="1.5" /><circle cx="8.5" cy="7.5" r="1.5" /><circle cx="6.5" cy="12.5" r="1.5" /><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z" /></svg>Design</h3>
+            <div class="theme-chips" id="themeSeg">
+                <button data-theme="auto"><i class="dot" style="background:linear-gradient(135deg,#f8f9fb 0 50%,#202020 50% 100%)"></i>Auto</button>
+                <button data-theme="light"><i class="dot" style="background:linear-gradient(135deg,#ffffff,#dce6f2)"></i>Hell</button>
+                <button data-theme="dark"><i class="dot" style="background:linear-gradient(135deg,#3c3c3c,#151515)"></i>Dunkel</button>
+                <button data-theme="neon"><i class="dot" style="background:linear-gradient(135deg,#19f0ff,#8a5cff,#ff2bd6)"></i>Neon</button>
+                <button data-theme="abstrakt"><i class="dot" style="background:linear-gradient(135deg,#ffe600,#7cff1e,#19b8ff,#ff2e97)"></i>Abstrakt</button>
+                <button data-theme="sunset"><i class="dot" style="background:linear-gradient(135deg,#ffe066,#ff9a3d,#ff5e7e,#6a2c8c)"></i>Sonnenuntergang</button>
+                <button data-theme="thermofin"><i class="dot" style="background:linear-gradient(135deg,#1b3a6b,#a7b0be,#c8102e)"></i>Thermofin</button>
+            </div>
+            <p class="hint">„Auto“ folgt der Einstellung des Geräts (hell oder dunkel).</p>
+        </div>
+        <div class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>Neuen Radiosender hinzufügen</h3>
+            <div class="field">
+                <label for="newId">ID</label><input id="newId" readonly>
+                <label for="newName">Name</label><input id="newName" autocomplete="off" enterkeyhint="next">
+                <label for="newGenre">Genre</label><input id="newGenre" autocomplete="off" enterkeyhint="next" placeholder="Sonstiges">
+                <div class="genre-tips" id="genreTips"></div>
+                <label for="newUrl">URL</label><input id="newUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" enterkeyhint="done">
+            </div>
+            <div class="actions">
+                <button class="btn primary" id="saveStation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>Sender speichern</button>
+                <span class="add-status" id="addStatus"></span>
+            </div>
+            <div class="own-list" id="ownList" hidden><h4>Eigene Sender</h4><div id="ownRows"></div></div>
+            <p class="hint">Eigene Sender werden nur auf diesem Gerät gespeichert. Die Stream-Adresse findest du meist auf der Webseite des Senders oder bei radio-browser.info.</p>
+        </div>
+        <div class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>Hinweise</h3>
+            <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /></svg><div><b>Als App installieren</b><span>iPhone: in Safari Teilen → „Zum Home-Bildschirm“. Android: in Chrome Menü ⋮ → „App installieren“.</span></div></div>
+            <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg><div><b>Titelanzeige</b><span>Titel und Interpret erscheinen, sobald der Sender sie bereitstellt.</span><span id="metaDiag"></span></div></div>
+            <div class="info-row" id="volumeHint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg><div><b>Lautstärke am iPhone</b><span>Apple lässt keine Lautstärkeregelung durch Webseiten zu – bitte die Tasten am iPhone oder das Kontrollzentrum verwenden.</span></div></div>
+        </div>
+        <div class="sheet-foot">
+            <span class="version" id="version"></span>
+            <button class="btn" id="closeSheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>Schließen</button>
+        </div>
+    </section>
 
-<audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
+    <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
-<script>
-const APP_VERSION = "1.6.1";
+    <script>
+const APP_VERSION = "1.7.0";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
@@ -371,22 +1290,22 @@ let STATIONS = [], BASE_STATIONS = [];
 
 /* Browser erlauben auf https-Seiten nur https-Streams: http-Adressen werden umgestellt */
 function normalizeUrl(url) {
-  const antenne = url.match(/^http:\/\/mp3channels\.webradio\.antenne\.de\/([^/?#]+)/);
-  if (antenne) return "https://stream.antenne.de/" + antenne[1] + "/stream/mp3";
-  const bob = url.match(/^http:\/\/streams\.radiobob\.de\/([^/]+)\/(mp3-\d+)\/mediaplayer/);
-  if (bob) return "https://streams.radiobob.de/" + bob[1] + "/" + bob[2] + "/streams.radiobob.de/";
-  return url.replace(/^http:\/\//, "https://");
+          const antenne = url.match(/^http:\/\/mp3channels\.webradio\.antenne\.de\/([^/?#]+)/);
+          if (antenne) return "https://stream.antenne.de/" + antenne[1] + "/stream/mp3";
+          const bob = url.match(/^http:\/\/streams\.radiobob\.de\/([^/]+)\/(mp3-\d+)\/mediaplayer/);
+          if (bob) return "https://streams.radiobob.de/" + bob[1] + "/" + bob[2] + "/streams.radiobob.de/";
+          return url.replace(/^http:\/\//, "https://");
 }
 function normalizeStations(list) {
-  return list
-    .filter(s => s && s.ID && s.Name && s.URL && !isNaN(parseInt(s.ID, 10)))
-    .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "", Own: !!s.Own }))
-    .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10));
+          return list
+            .filter(s => s && s.ID && s.Name && s.URL && !isNaN(parseInt(s.ID, 10)))
+            .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Key: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "", Own: !!s.Own }))
+            .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10));
 }
 
 const STORE = {
-  get(key, fallback) { try { const v = localStorage.getItem("jukebox." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
-  set(key, value) { try { localStorage.setItem("jukebox." + key, JSON.stringify(value)); } catch {} }
+          get(key, fallback) { try { const v = localStorage.getItem("jukebox." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+          set(key, value) { try { localStorage.setItem("jukebox." + key, JSON.stringify(value)); } catch {} }
 };
 
 const ALL = "Alle", FAVS = "★ Favoriten";
@@ -396,7 +1315,37 @@ const playBtn = $("playBtn"), playIcon = $("playIcon"), nowTitle = $("nowTitle")
 const volumeEl = $("volume"), volumeValue = $("volumeValue");
 
 let genre = STORE.get("genre", ALL);
-let favorites = new Set(STORE.get("favorites", []));
+/* Favoriten und „zuletzt gehört“ merken sich Adresse und Name statt der ID:
+           so bleiben sie erhalten, wenn radiostation.json neu nummeriert oder ergänzt wird */
+let favorites = new Set();
+let favRefs = [].concat(STORE.get("favs2", []) || []).filter(r => r && (r.u || r.n));
+const stationRef = s => ({ u: s.Key, n: s.Name });
+const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+const findByRef = r => r && (STATIONS.find(s => s.Key === r.u) || STATIONS.find(s => sameName(s.Name, r.n)));
+const refMatches = (r, s) => r.u === s.Key || (!STATIONS.some(x => x.Key === r.u) && sameName(r.n, s.Name));
+function resolveFavorites() {
+          const old = STORE.get("favorites", null);
+          if (old && !STORE.get("favs2", null)) {
+            favRefs = [].concat(old).map(id => STATIONS.find(s => s.ID === String(id))).filter(Boolean).map(stationRef);
+            STORE.set("favs2", favRefs);
+            try { localStorage.removeItem("jukebox.favorites"); } catch {}
+          }
+          favorites = new Set(favRefs.map(findByRef).filter(Boolean).map(s => s.ID));
+}
+function toggleFavorite(s) {
+          if (favorites.has(s.ID)) favRefs = favRefs.filter(r => !refMatches(r, s));
+          else favRefs.push(stationRef(s));
+          STORE.set("favs2", favRefs);
+          resolveFavorites();
+}
+function rememberLast(s) { STORE.set("last", stationRef(s)); }
+function findLast() {
+          const last = STORE.get("last", null);
+          if (typeof last !== "string") return findByRef(last);
+          const found = STATIONS.find(s => s.ID === last);
+          if (found) rememberLast(found);
+          return found;
+}
 let visible = [];
 let current = null;
 let failed = new Set();
@@ -404,90 +1353,90 @@ let failed = new Set();
 /* Design: auto folgt dem Handy, hell/dunkel erzwingt es */
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 const FX_THEMES = {
-  neon: { color: "#0a0614" },
-  abstrakt: { color: "#05060f", logo: "themes/logo_abstrakt.png" },
-  sunset: { color: "#2a0410", logo: "themes/logo_sunset.png" },
-  thermofin: { color: "#0b1b38", logo: "themes/logo_thermofin.png" }
+          neon: { color: "#0a0614" },
+          abstrakt: { color: "#05060f", logo: "themes/logo_abstrakt.png" },
+          sunset: { color: "#2a0410", logo: "themes/logo_sunset.png" },
+          thermofin: { color: "#0b1b38", logo: "themes/logo_thermofin.png" }
 };
 let themeMode = STORE.get("theme", "auto");
 if (!["auto", "light", "dark"].includes(themeMode) && !FX_THEMES[themeMode]) themeMode = "auto";
 function applyTheme() {
-  const fx = FX_THEMES[themeMode], root = document.documentElement;
-  const dark = themeMode === "dark" || (themeMode === "auto" && darkQuery.matches);
-  root.dataset.theme = fx ? themeMode : dark ? "dark" : "light";
-  if (fx) root.dataset.fx = ""; else delete root.dataset.fx;
-  if (fx && fx.logo) { $("themeLogo").src = fx.logo; root.dataset.logo = ""; } else delete root.dataset.logo;
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", fx ? fx.color : m.dataset.orig));
-  document.querySelectorAll("#themeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === themeMode));
+          const fx = FX_THEMES[themeMode], root = document.documentElement;
+          const dark = themeMode === "dark" || (themeMode === "auto" && darkQuery.matches);
+          root.dataset.theme = fx ? themeMode : dark ? "dark" : "light";
+          if (fx) root.dataset.fx = ""; else delete root.dataset.fx;
+          if (fx && fx.logo) { $("themeLogo").src = fx.logo; root.dataset.logo = ""; } else delete root.dataset.logo;
+          document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", fx ? fx.color : m.dataset.orig));
+          document.querySelectorAll("#themeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === themeMode));
 }
 darkQuery.addEventListener("change", applyTheme);
 document.querySelectorAll("#themeSeg button").forEach(b => b.addEventListener("click", () => {
-  themeMode = b.dataset.theme; STORE.set("theme", themeMode); applyTheme();
+          themeMode = b.dataset.theme; STORE.set("theme", themeMode); applyTheme();
 }));
 applyTheme();
 
 /* Sender-Logos: "Logo" aus radiostation.json, SomaFM-Kanallogo oder Favicon der Sender-Webseite */
 const SITE_RULES = [
-  [/regc-80s80s/, "80s80s.de"], [/mdr\.de\/mdr\/284320\//, "jumpradio.de"], [/radiotop40/, "radiotop40.de"],
-  [/swr\.de\/.*\/swr3\//, "swr3.de"], [/swr\.de\/.*\/dasding\//, "dasding.de"], [/swr\.de\/.*\/swr1bw\//, "swr1.de"],
-  [/\/wdr\/1live\//, "1live.de"], [/\/wdr\/wdr2\//, "wdr2.de"], [/\/wdr\/wdr3\//, "wdr3.de"], [/\/wdr\/wdr4\//, "wdr4.de"], [/\/wdr\/cosmo\//, "wdr.de"],
-  [/\/br\/br1\//, "bayern1.de"], [/\/br\/br3\//, "bayern3.de"], [/\/br\/brklassik\//, "br-klassik.de"], [/\/br\/brheimat\//, "br.de"],
-  [/\/hr\/hr1\//, "hr1.de"], [/\/hr\/hr3\//, "hr3.de"], [/\/hr\/youfm\//, "you-fm.de"],
-  [/\/rbb\/fritz\//, "fritz.de"], [/\/rbb\/radioeins\//, "radioeins.de"],
-  [/\/ndr\/ndr2\//, "ndr.de"], [/\/ndr\/njoy\//, "n-joy.de"],
-  [/\/m\/rsp\//, "radioswisspop.ch"], [/\/m\/rsj\//, "radioswissjazz.ch"], [/\/m\/rsc_de\//, "radioswissclassic.ch"],
-  [/\/m\/(drs3|drsvirus)\//, "srf.ch"], [/\/m\/couleur3\//, "couleur3.ch"],
-  [/ilovemusic\.de/, "iloveradio.de"], [/104\.6rtl\.com/, "104.6rtl.com"], [/89\.0rtl\.de/, "89.0rtl.de"]
+          [/regc-80s80s/, "80s80s.de"], [/mdr\.de\/mdr\/284320\//, "jumpradio.de"], [/radiotop40/, "radiotop40.de"],
+          [/swr\.de\/.*\/swr3\//, "swr3.de"], [/swr\.de\/.*\/dasding\//, "dasding.de"], [/swr\.de\/.*\/swr1bw\//, "swr1.de"],
+          [/\/wdr\/1live\//, "1live.de"], [/\/wdr\/wdr2\//, "wdr2.de"], [/\/wdr\/wdr3\//, "wdr3.de"], [/\/wdr\/wdr4\//, "wdr4.de"], [/\/wdr\/cosmo\//, "wdr.de"],
+          [/\/br\/br1\//, "bayern1.de"], [/\/br\/br3\//, "bayern3.de"], [/\/br\/brklassik\//, "br-klassik.de"], [/\/br\/brheimat\//, "br.de"],
+          [/\/hr\/hr1\//, "hr1.de"], [/\/hr\/hr3\//, "hr3.de"], [/\/hr\/youfm\//, "you-fm.de"],
+          [/\/rbb\/fritz\//, "fritz.de"], [/\/rbb\/radioeins\//, "radioeins.de"],
+          [/\/ndr\/ndr2\//, "ndr.de"], [/\/ndr\/njoy\//, "n-joy.de"],
+          [/\/m\/rsp\//, "radioswisspop.ch"], [/\/m\/rsj\//, "radioswissjazz.ch"], [/\/m\/rsc_de\//, "radioswissclassic.ch"],
+          [/\/m\/(drs3|drsvirus)\//, "srf.ch"], [/\/m\/couleur3\//, "couleur3.ch"],
+          [/ilovemusic\.de/, "iloveradio.de"], [/104\.6rtl\.com/, "104.6rtl.com"], [/89\.0rtl\.de/, "89.0rtl.de"]
 ];
 const somaChannel = url => (url.match(/somafm\.com\/([a-z0-9]+?)-\d+-mp3/i) || [])[1];
 function logoUrl(s) {
-  if (s.Logo) return s.Logo;
-  const soma = somaChannel(s.URL);
-  if (soma) return "https://api.somafm.com/logos/256/" + soma + "256.png";
-  const rule = SITE_RULES.find(r => r[0].test(s.URL));
-  const site = rule ? rule[1] : new URL(s.URL).hostname.split(".").slice(-2).join(".");
-  return "https://www.google.com/s2/favicons?domain=" + site + "&sz=128";
+          if (s.Logo) return s.Logo;
+          const soma = somaChannel(s.URL);
+          if (soma) return "https://api.somafm.com/logos/256/" + soma + "256.png";
+          const rule = SITE_RULES.find(r => r[0].test(s.URL));
+          const site = rule ? rule[1] : new URL(s.URL).hostname.split(".").slice(-2).join(".");
+          return "https://www.google.com/s2/favicons?domain=" + site + "&sz=128";
 }
 const logoOk = new Map();
 function initials(name) {
-  const words = name.replace(/^(Radio|SomaFM)\s+/i, "").split(/[\s\-–/]+/).filter(Boolean);
-  return ((words[0] || "?")[0] + (words[1] ? words[1][0] : (words[0] || "")[1] || "")).toUpperCase();
+          const words = name.replace(/^(Radio|SomaFM)\s+/i, "").split(/[\s\-–/]+/).filter(Boolean);
+          return ((words[0] || "?")[0] + (words[1] ? words[1][0] : (words[0] || "")[1] || "")).toUpperCase();
 }
 function showInitials(box, s) {
-  let h = 0; for (const c of s.Name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  box.classList.add("initials");
-  box.style.background = "hsl(" + (h % 360) + " 45% 42%)";
-  box.textContent = initials(s.Name);
+          let h = 0; for (const c of s.Name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+          box.classList.add("initials");
+          box.style.background = "hsl(" + (h % 360) + " 45% 42%)";
+          box.textContent = initials(s.Name);
 }
 function fillLogo(box, s) {
-  box.replaceChildren(); box.style.background = ""; box.classList.remove("initials");
-  if (logoOk.get(s.ID) === false) { showInitials(box, s); return; }
-  const img = new Image();
-  img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
-  img.onload = () => {
-    if (img.naturalWidth <= 16) { logoOk.set(s.ID, false); showInitials(box, s); return; }
-    logoOk.set(s.ID, true);
-    if (current && current.ID === s.ID) updateMediaSession();
-  };
-  img.onerror = () => { logoOk.set(s.ID, false); showInitials(box, s); };
-  img.src = logoUrl(s);
-  box.appendChild(img);
+          box.replaceChildren(); box.style.background = ""; box.classList.remove("initials");
+          if (logoOk.get(s.ID) === false) { showInitials(box, s); return; }
+          const img = new Image();
+          img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
+          img.onload = () => {
+            if (img.naturalWidth <= 16) { logoOk.set(s.ID, false); showInitials(box, s); return; }
+            logoOk.set(s.ID, true);
+            if (current && current.ID === s.ID) updateMediaSession();
+          };
+          img.onerror = () => { logoOk.set(s.ID, false); showInitials(box, s); };
+          img.src = logoUrl(s);
+          box.appendChild(img);
 }
 
 /* Genre-Chips */
 function renderChips() {
-  const genres = [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"));
-  const items = [ALL, FAVS, ...genres];
-  if (!items.includes(genre)) genre = ALL;
-  chipsEl.innerHTML = "";
-  for (const g of items) {
-    const chip = document.createElement("button");
-    chip.className = "chip";
-    chip.textContent = g;
-    chip.setAttribute("aria-pressed", g === genre);
-    chip.addEventListener("click", () => { genre = g; STORE.set("genre", g); renderChips(); renderList(); });
-    chipsEl.appendChild(chip);
-  }
+          const genres = [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"));
+          const items = [ALL, FAVS, ...genres];
+          if (!items.includes(genre)) genre = ALL;
+          chipsEl.innerHTML = "";
+          for (const g of items) {
+            const chip = document.createElement("button");
+            chip.className = "chip";
+            chip.textContent = g;
+            chip.setAttribute("aria-pressed", g === genre);
+            chip.addEventListener("click", () => { genre = g; STORE.set("genre", g); renderChips(); renderList(); });
+            chipsEl.appendChild(chip);
+          }
 }
 
 const starSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3 18.2 21l-1.6-7L22 9.2l-7.2-.6L12 2 9.2 8.6 2 9.2 7.4 14l-1.6 7z"/></svg>';
@@ -495,304 +1444,303 @@ const starOutline = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 /* Senderliste */
 function renderList() {
-  const q = searchEl.value.trim().toLowerCase();
-  visible = STATIONS.filter(s =>
-    (genre === ALL || (genre === FAVS ? favorites.has(s.ID) : s.Genre === genre)) &&
-    (!q || s.Name.toLowerCase().includes(q) || s.Genre.toLowerCase().includes(q)));
-  listEl.innerHTML = "";
-  if (visible.length === 0) {
-    listEl.innerHTML = '<li class="empty">' + (genre === FAVS ? "Noch keine Favoriten – tippe auf den Stern neben einem Sender." : "Kein Sender gefunden.") + "</li>";
-  }
-  for (const s of visible) {
-    const li = document.createElement("li");
-    li.dataset.id = s.ID;
-    li.className = "station" + (current && current.ID === s.ID ? " playing" : "") + (failed.has(s.ID) ? " failed" : "") + (audio.paused ? " paused" : "");
-    li.innerHTML = '<span class="id"></span><span class="st-logo"></span><div class="info"><div class="name"></div><div class="genre"></div></div><span class="eq"><i></i><i></i><i></i></span><button class="fav"></button>';
-    li.querySelector(".id").textContent = s.ID;
-    fillLogo(li.querySelector(".st-logo"), s);
-    li.querySelector(".name").textContent = s.Name;
-    li.querySelector(".genre").textContent = genreText(s);
-    const fav = li.querySelector(".fav");
-    const isFav = favorites.has(s.ID);
-    fav.innerHTML = isFav ? starSvg : starOutline;
-    fav.setAttribute("aria-pressed", isFav);
-    fav.setAttribute("aria-label", isFav ? "Favorit entfernen" : "Als Favorit merken");
-    fav.addEventListener("click", e => {
-      e.stopPropagation();
-      favorites.has(s.ID) ? favorites.delete(s.ID) : favorites.add(s.ID);
-      STORE.set("favorites", [...favorites]);
-      renderList();
-    });
-    li.addEventListener("click", () => play(s));
-    listEl.appendChild(li);
-  }
-  countEl.textContent = visible.length + " von " + STATIONS.length + " Sendern";
-  showSong();
+          const q = searchEl.value.trim().toLowerCase();
+          visible = STATIONS.filter(s =>
+            (genre === ALL || (genre === FAVS ? favorites.has(s.ID) : s.Genre === genre)) &&
+            (!q || s.Name.toLowerCase().includes(q) || s.Genre.toLowerCase().includes(q)));
+          listEl.innerHTML = "";
+          if (visible.length === 0) {
+            listEl.innerHTML = '<li class="empty">' + (genre === FAVS ? "Noch keine Favoriten – tippe auf den Stern neben einem Sender." : "Kein Sender gefunden.") + "</li>";
+          }
+          for (const s of visible) {
+            const li = document.createElement("li");
+            li.dataset.id = s.ID;
+            li.className = "station" + (current && current.ID === s.ID ? " playing" : "") + (failed.has(s.ID) ? " failed" : "") + (audio.paused ? " paused" : "");
+            li.innerHTML = '<span class="id"></span><span class="st-logo"></span><div class="info"><div class="name"></div><div class="genre"></div></div><span class="eq"><i></i><i></i><i></i></span><button class="fav"></button>';
+            li.querySelector(".id").textContent = s.ID;
+            fillLogo(li.querySelector(".st-logo"), s);
+            li.querySelector(".name").textContent = s.Name;
+            li.querySelector(".genre").textContent = genreText(s);
+            const fav = li.querySelector(".fav");
+            const isFav = favorites.has(s.ID);
+            fav.innerHTML = isFav ? starSvg : starOutline;
+            fav.setAttribute("aria-pressed", isFav);
+            fav.setAttribute("aria-label", isFav ? "Favorit entfernen" : "Als Favorit merken");
+            fav.addEventListener("click", e => {
+              e.stopPropagation();
+              toggleFavorite(s);
+              renderList();
+            });
+            li.addEventListener("click", () => play(s));
+            listEl.appendChild(li);
+          }
+          countEl.textContent = visible.length + " von " + STATIONS.length + " Sendern";
+          showSong();
 }
 
 /* Wiedergabe */
 function setStatus(text, kind) {
-  nowStatus.textContent = text;
-  nowStatus.className = "status" + (kind ? " " + kind : "");
+          nowStatus.textContent = text;
+          nowStatus.className = "status" + (kind ? " " + kind : "");
 }
 function updatePlayButton() {
-  const playing = current && !audio.paused;
-  playIcon.innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
-  playBtn.setAttribute("aria-label", playing ? "Stoppen" : "Abspielen");
-  playBtn.disabled = !current;
-  document.querySelectorAll(".station").forEach(li => li.classList.toggle("paused", !playing));
+          const playing = current && !audio.paused;
+          playIcon.innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+          playBtn.setAttribute("aria-label", playing ? "Stoppen" : "Abspielen");
+          playBtn.disabled = !current;
+          document.querySelectorAll(".station").forEach(li => li.classList.toggle("paused", !playing));
 }
 function selectStation(station) {
-  current = station;
-  nowTitle.textContent = station.Name;
-  nowLogo.hidden = false;
-  fillLogo(nowLogo, station);
+          current = station;
+          nowTitle.textContent = station.Name;
+          nowLogo.hidden = false;
+          fillLogo(nowLogo, station);
 }
 /* SomaFM: mehrere Server; Safari spielt deren Shoutcast-Antwort nicht, dort zuerst über den eigenen Worker */
 function streamUrls(station) {
-  const m = station.URL.match(/^https:\/\/ice\d*\.somafm\.com(\/.*)$/);
-  if (!m) return [station.URL];
-  const direct = [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
-  if (!TITLE_SERVICE) return direct;
-  const proxied = ["ice2", "ice4"].map(h => TITLE_SERVICE + "stream?url=" + encodeURIComponent("https://" + h + ".somafm.com" + m[1]));
-  return isSafari ? [...proxied, ...direct] : [...direct, ...proxied];
+          const m = station.URL.match(/^https:\/\/ice\d*\.somafm\.com(\/.*)$/);
+          if (!m) return [station.URL];
+          const direct = [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
+          if (!TITLE_SERVICE) return direct;
+          const proxied = ["ice2", "ice4"].map(h => TITLE_SERVICE + "stream?url=" + encodeURIComponent("https://" + h + ".somafm.com" + m[1]));
+          return isSafari ? [...proxied, ...direct] : [...direct, ...proxied];
 }
 const attempt = { id: null, urls: [], i: 0, timer: 0 };
 function tryStream() {
-  clearTimeout(attempt.timer);
-  audio.src = attempt.urls[attempt.i];
-  const result = audio.play();
-  if (result && result.catch) result.catch(err => { if (err.name !== "AbortError" && err.name !== "NotSupportedError") setStatus("Wiedergabe nicht möglich – bitte erneut tippen", "err"); });
-  attempt.timer = setTimeout(() => { if (audio.readyState < 3) streamFailed("keine Antwort"); }, 15000);
+          clearTimeout(attempt.timer);
+          audio.src = attempt.urls[attempt.i];
+          const result = audio.play();
+          if (result && result.catch) result.catch(err => { if (err.name !== "AbortError" && err.name !== "NotSupportedError") setStatus("Wiedergabe nicht möglich – bitte erneut tippen", "err"); });
+          attempt.timer = setTimeout(() => { if (audio.readyState < 3) streamFailed("keine Antwort"); }, 15000);
 }
 function streamFailed(reason) {
-  clearTimeout(attempt.timer);
-  if (!current || attempt.id !== current.ID) return;
-  if (++attempt.i < attempt.urls.length) { setStatus("Verbinde … (Server " + (attempt.i + 1) + ")"); tryStream(); return; }
-  stopMeta();
-  audio.pause(); audio.removeAttribute("src"); audio.load();
-  failed.add(current.ID);
-  setStatus("Sender nicht erreichbar (" + reason + ")", "err");
-  renderList();
-  updatePlayButton();
+          clearTimeout(attempt.timer);
+          if (!current || attempt.id !== current.ID) return;
+          if (++attempt.i < attempt.urls.length) { setStatus("Verbinde … (Server " + (attempt.i + 1) + ")"); tryStream(); return; }
+          stopMeta();
+          audio.pause(); audio.removeAttribute("src"); audio.load();
+          failed.add(current.ID);
+          setStatus("Sender nicht erreichbar (" + reason + ")", "err");
+          renderList();
+          updatePlayButton();
 }
 function play(station) {
-  if (!current || current.ID !== station.ID) stopMeta();
-  selectStation(station);
-  failed.delete(station.ID);
-  STORE.set("last", station.ID);
-  setStatus("Verbinde …");
-  Object.assign(attempt, { id: station.ID, urls: streamUrls(station), i: 0 });
-  tryStream();
-  updateMediaSession();
-  renderList();
-  updatePlayButton();
+          if (!current || current.ID !== station.ID) stopMeta();
+          selectStation(station);
+          failed.delete(station.ID);
+          rememberLast(station);
+          setStatus("Verbinde …");
+          Object.assign(attempt, { id: station.ID, urls: streamUrls(station), i: 0 });
+          tryStream();
+          updateMediaSession();
+          renderList();
+          updatePlayButton();
 }
 function stop() {
-  clearTimeout(attempt.timer); attempt.id = null;
-  stopMeta();
-  audio.pause();
-  audio.removeAttribute("src");
-  audio.load();
-  setStatus("Gestoppt");
-  updatePlayButton();
+          clearTimeout(attempt.timer); attempt.id = null;
+          stopMeta();
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.load();
+          setStatus("Gestoppt");
+          updatePlayButton();
 }
 audio.addEventListener("playing", () => {
-  clearTimeout(attempt.timer);
-  if (current && attempt.id === current.ID && !attempt.urls[attempt.i].startsWith(TITLE_SERVICE || "-")) current.URL = attempt.urls[attempt.i];
-  showSong(); updatePlayButton();
-  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-  if (meta.station !== current.ID) startMeta();
+          clearTimeout(attempt.timer);
+          if (current && attempt.id === current.ID && !attempt.urls[attempt.i].startsWith(TITLE_SERVICE || "-")) current.URL = attempt.urls[attempt.i];
+          showSong(); updatePlayButton();
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+          if (meta.station !== current.ID) startMeta();
 });
 audio.addEventListener("waiting", () => setStatus("Puffert …"));
 audio.addEventListener("pause", () => { updatePlayButton(); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; });
 const MEDIA_ERRORS = { 1: "abgebrochen", 2: "Netzwerkfehler", 3: "Format nicht lesbar", 4: "Adresse/Format nicht unterstützt" };
 audio.addEventListener("error", () => {
-  if (!current || !audio.getAttribute("src")) return;
-  streamFailed(MEDIA_ERRORS[audio.error && audio.error.code] || "Fehler");
+          if (!current || !audio.getAttribute("src")) return;
+          streamFailed(MEDIA_ERRORS[audio.error && audio.error.code] || "Fehler");
 });
 
 playBtn.addEventListener("click", () => {
-  if (!current) return;
-  if (audio.paused) play(current); else stop();
+          if (!current) return;
+          if (audio.paused) play(current); else stop();
 });
 $("randomBtn").addEventListener("click", () => {
-  const pool = visible.length ? visible : STATIONS;
-  if (pool.length) play(pool[Math.floor(Math.random() * pool.length)]);
+          const pool = visible.length ? visible : STATIONS;
+          if (pool.length) play(pool[Math.floor(Math.random() * pool.length)]);
 });
 function step(dir) {
-  const pool = visible.length ? visible : STATIONS;
-  if (!pool.length) return;
-  const i = current ? pool.findIndex(s => s.ID === current.ID) : -1;
-  play(pool[(i + dir + pool.length) % pool.length]);
+          const pool = visible.length ? visible : STATIONS;
+          if (!pool.length) return;
+          const i = current ? pool.findIndex(s => s.ID === current.ID) : -1;
+          play(pool[(i + dir + pool.length) % pool.length]);
 }
 
 /* Aktueller Titel: Sender-API (laut.fm, SomaFM), Icecast-Status oder ICY-Daten im Stream */
 function splitTitle(text) {
-  text = String(text || "").replace(/\0+$/, "").trim();
-  if (!text || /^[-–\s]*$/.test(text)) return null;
-  const i = text.indexOf(" - ");
-  return i > 0 ? { artist: text.slice(0, i).trim(), title: text.slice(i + 3).trim() } : { artist: "", title: text };
+          text = String(text || "").replace(/\0+$/, "").trim();
+          if (!text || /^[-–\s]*$/.test(text)) return null;
+          const i = text.indexOf(" - ");
+          return i > 0 ? { artist: text.slice(0, i).trim(), title: text.slice(i + 3).trim() } : { artist: "", title: text };
 }
 function cleanSong(song, station) {
-  if (!song || !song.title) return null;
-  const name = station.Name.toLowerCase();
-  if (song.title.toLowerCase() === name && !song.artist) return null;
-  return song;
+          if (!song || !song.title) return null;
+          const name = station.Name.toLowerCase();
+          if (song.title.toLowerCase() === name && !song.artist) return null;
+          return song;
 }
 function decodeMeta(bytes) {
-  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return new TextDecoder("windows-1252").decode(bytes); }
+          try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return new TextDecoder("windows-1252").decode(bytes); }
 }
 /* Liest aus dem Stream bis zum ersten Metadatenblock und bricht dann ab (wenige KB statt Dauer-Download) */
 async function readIcyTitle(reader, metaint) {
-  let skip = metaint, need = -1, got = 0, total = 0, block = null;
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) throw new Error("Stream-Ende");
-    if ((total += value.length) > 4 * metaint + 65536) throw new Error("Keine Metadaten");
-    let i = 0;
-    while (i < value.length) {
-      if (skip > 0) { const n = Math.min(skip, value.length - i); skip -= n; i += n; continue; }
-      if (need < 0) {
-        need = value[i++] * 16;
-        if (need === 0) { need = -1; skip = metaint; }
-        else { block = new Uint8Array(need); got = 0; }
-        continue;
-      }
-      const n = Math.min(need - got, value.length - i);
-      block.set(value.subarray(i, i + n), got); got += n; i += n;
-      if (got === need) {
-        const m = decodeMeta(block).match(/StreamTitle='([\s\S]*?)';/);
-        return m ? splitTitle(m[1]) : null;
-      }
-    }
-  }
+          let skip = metaint, need = -1, got = 0, total = 0, block = null;
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) throw new Error("Stream-Ende");
+            if ((total += value.length) > 4 * metaint + 65536) throw new Error("Keine Metadaten");
+            let i = 0;
+            while (i < value.length) {
+              if (skip > 0) { const n = Math.min(skip, value.length - i); skip -= n; i += n; continue; }
+              if (need < 0) {
+                need = value[i++] * 16;
+                if (need === 0) { need = -1; skip = metaint; }
+                else { block = new Uint8Array(need); got = 0; }
+                continue;
+              }
+              const n = Math.min(need - got, value.length - i);
+              block.set(value.subarray(i, i + n), got); got += n; i += n;
+              if (got === need) {
+                const m = decodeMeta(block).match(/StreamTitle='([\s\S]*?)';/);
+                return m ? splitTitle(m[1]) : null;
+              }
+            }
+          }
 }
 const named = (label, fn) => Object.assign(fn, { label });
 const metaProviders = s => {
-  const u = new URL(s.URL), list = [], soma = somaChannel(s.URL);
-  if (TITLE_SERVICE) list.push(named("Titel-Dienst", async signal => {
-    const r = await fetch(TITLE_SERVICE + "?url=" + encodeURIComponent(s.URL), { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    if (j.error) throw new Error(j.error);
-    return j.title ? { title: String(j.title).trim(), artist: String(j.artist || "").trim() } : null;
-  }));
-  if (u.hostname === "stream.laut.fm") list.push(named("laut.fm", async signal => {
-    const r = await fetch("https://api.laut.fm/station/" + u.pathname.slice(1) + "/current_song", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    return j && j.title ? { title: String(j.title).trim(), artist: j.artist && j.artist.name ? String(j.artist.name).trim() : "" } : null;
-  }));
-  if (soma) list.push(named("SomaFM", async signal => {
-    const r = await fetch("https://api.somafm.com/songs/" + soma + ".json", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    const song = ((await r.json()).songs || [])[0];
-    return song && song.title ? { title: String(song.title).trim(), artist: String(song.artist || "").trim() } : null;
-  }));
-  list.push(named("Icecast-Status", async signal => {
-    const r = await fetch(u.origin + "/status-json.xsl", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    let src = ((await r.json()).icestats || {}).source;
-    src = [].concat(src || []).find(x => x.listenurl && new URL(x.listenurl).pathname === u.pathname);
-    if (!src) throw new Error("Mount fehlt");
-    if (src.artist && src.title) return { artist: String(src.artist).trim(), title: String(src.title).trim() };
-    return splitTitle(src.title || src.yp_currently_playing);
-  }));
-  list.push(named("Stream (ICY)", async signal => {
-    const r = await fetch(s.URL, { signal, cache: "no-store", headers: { "Icy-MetaData": "1" } });
-    const metaint = parseInt(r.headers.get("icy-metaint"), 10);
-    if (!r.ok || !r.body || !(metaint > 0)) { if (r.body) r.body.cancel().catch(() => {}); throw new Error("Kein ICY"); }
-    const reader = r.body.getReader();
-    try { return await readIcyTitle(reader, metaint); } finally { reader.cancel().catch(() => {}); }
-  }));
-  return list;
+          const u = new URL(s.URL), list = [], soma = somaChannel(s.URL);
+          if (TITLE_SERVICE) list.push(named("Titel-Dienst", async signal => {
+            const r = await fetch(TITLE_SERVICE + "?url=" + encodeURIComponent(s.URL), { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            const j = await r.json();
+            if (j.error) throw new Error(j.error);
+            return j.title ? { title: String(j.title).trim(), artist: String(j.artist || "").trim() } : null;
+          }));
+          if (u.hostname === "stream.laut.fm") list.push(named("laut.fm", async signal => {
+            const r = await fetch("https://api.laut.fm/station/" + u.pathname.slice(1) + "/current_song", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            const j = await r.json();
+            return j && j.title ? { title: String(j.title).trim(), artist: j.artist && j.artist.name ? String(j.artist.name).trim() : "" } : null;
+          }));
+          if (soma) list.push(named("SomaFM", async signal => {
+            const r = await fetch("https://api.somafm.com/songs/" + soma + ".json", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            const song = ((await r.json()).songs || [])[0];
+            return song && song.title ? { title: String(song.title).trim(), artist: String(song.artist || "").trim() } : null;
+          }));
+          list.push(named("Icecast-Status", async signal => {
+            const r = await fetch(u.origin + "/status-json.xsl", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            let src = ((await r.json()).icestats || {}).source;
+            src = [].concat(src || []).find(x => x.listenurl && new URL(x.listenurl).pathname === u.pathname);
+            if (!src) throw new Error("Mount fehlt");
+            if (src.artist && src.title) return { artist: String(src.artist).trim(), title: String(src.title).trim() };
+            return splitTitle(src.title || src.yp_currently_playing);
+          }));
+          list.push(named("Stream (ICY)", async signal => {
+            const r = await fetch(s.URL, { signal, cache: "no-store", headers: { "Icy-MetaData": "1" } });
+            const metaint = parseInt(r.headers.get("icy-metaint"), 10);
+            if (!r.ok || !r.body || !(metaint > 0)) { if (r.body) r.body.cancel().catch(() => {}); throw new Error("Kein ICY"); }
+            const reader = r.body.getReader();
+            try { return await readIcyTitle(reader, metaint); } finally { reader.cancel().catch(() => {}); }
+          }));
+          return list;
 };
 const meta = { gen: 0, station: null, timer: 0, ctrl: null, song: null, info: new Map() };
 function stopMeta() {
-  meta.gen++; meta.station = null; meta.song = null;
-  clearTimeout(meta.timer);
-  if (meta.ctrl) meta.ctrl.abort();
-  document.title = APP_NAME;
+          meta.gen++; meta.station = null; meta.song = null;
+          clearTimeout(meta.timer);
+          if (meta.ctrl) meta.ctrl.abort();
+          document.title = APP_NAME;
 }
 function startMeta() {
-  stopMeta();
-  const gen = meta.gen, st = current, providers = metaProviders(st);
-  meta.station = st.ID;
-  if (!meta.info.has(st.ID)) meta.info.set(st.ID, { good: -1, fails: 0, dead: new Set() });
-  const info = meta.info.get(st.ID);
-  info.labels = providers.map(p => p.label);
-  const run = async () => {
-    const order = info.good >= 0 ? [info.good] : providers.map((_, i) => i).filter(i => !info.dead.has(i));
-    if (!order.length) return;
-    for (const i of order) {
-      const ctrl = meta.ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 12000);
-      try {
-        const song = cleanSong(await providers[i](ctrl.signal), st);
-        if (gen !== meta.gen) return;
-        info.good = i; info.fails = 0;
-        setSong(song);
-        break;
-      } catch {
-        if (gen !== meta.gen) return;
-        if (info.good === i) { if (++info.fails >= 3) { info.good = -1; info.dead.clear(); } }
-        else info.dead.add(i);
-      } finally { clearTimeout(t); }
-    }
-    if (gen === meta.gen && (info.good >= 0 || info.dead.size < providers.length)) meta.timer = setTimeout(run, 25000);
-    showMetaDiag();
-  };
-  run();
+          stopMeta();
+          const gen = meta.gen, st = current, providers = metaProviders(st);
+          meta.station = st.ID;
+          if (!meta.info.has(st.ID)) meta.info.set(st.ID, { good: -1, fails: 0, dead: new Set() });
+          const info = meta.info.get(st.ID);
+          info.labels = providers.map(p => p.label);
+          const run = async () => {
+            const order = info.good >= 0 ? [info.good] : providers.map((_, i) => i).filter(i => !info.dead.has(i));
+            if (!order.length) return;
+            for (const i of order) {
+              const ctrl = meta.ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 12000);
+              try {
+                const song = cleanSong(await providers[i](ctrl.signal), st);
+                if (gen !== meta.gen) return;
+                info.good = i; info.fails = 0;
+                setSong(song);
+                break;
+              } catch {
+                if (gen !== meta.gen) return;
+                if (info.good === i) { if (++info.fails >= 3) { info.good = -1; info.dead.clear(); } }
+                else info.dead.add(i);
+              } finally { clearTimeout(t); }
+            }
+            if (gen === meta.gen && (info.good >= 0 || info.dead.size < providers.length)) meta.timer = setTimeout(run, 25000);
+            showMetaDiag();
+          };
+          run();
 }
 function showMetaDiag() {
-  const el = $("metaDiag"), info = current && meta.info.get(current.ID);
-  if (!info || !info.labels) { el.textContent = "Titelquelle: erst einen Sender abspielen."; return; }
-  if (info.good >= 0) el.textContent = "Titelquelle für " + current.Name + ": " + info.labels[info.good] + ".";
-  else if (info.dead.size >= info.labels.length) el.textContent = current.Name + " liefert keine Titel (geprüft: " + info.labels.join(", ") + ")." + (TITLE_SERVICE ? "" : " Kein Titel-Dienst eingerichtet.");
-  else el.textContent = "Titelquelle für " + current.Name + " wird gesucht …";
+          const el = $("metaDiag"), info = current && meta.info.get(current.ID);
+          if (!info || !info.labels) { el.textContent = "Titelquelle: erst einen Sender abspielen."; return; }
+          if (info.good >= 0) el.textContent = "Titelquelle für " + current.Name + ": " + info.labels[info.good] + ".";
+          else if (info.dead.size >= info.labels.length) el.textContent = current.Name + " liefert keine Titel (geprüft: " + info.labels.join(", ") + ")." + (TITLE_SERVICE ? "" : " Kein Titel-Dienst eingerichtet.");
+          else el.textContent = "Titelquelle für " + current.Name + " wird gesucht …";
 }
 const songText = song => song.title + (song.artist ? " – " + song.artist : "");
 function setSong(song) {
-  const old = meta.song ? songText(meta.song) : "", now = song ? songText(song) : "";
-  meta.song = song;
-  if (old === now) return;
-  showSong();
-  updateMediaSession();
+          const old = meta.song ? songText(meta.song) : "", now = song ? songText(song) : "";
+          meta.song = song;
+          if (old === now) return;
+          showSong();
+          updateMediaSession();
 }
 function showSong() {
-  const song = current && !audio.paused && meta.station === current.ID ? meta.song : null;
-  if (current && !audio.paused && audio.readyState > 2) {
-    if (song) { nowStatus.className = "status ok"; nowStatus.textContent = "Läuft: "; const b = document.createElement("b"); b.textContent = songText(song); nowStatus.appendChild(b); }
-    else setStatus("Läuft", "ok");
-  }
-  document.querySelectorAll(".station .genre.song").forEach(el => {
-    const s = STATIONS.find(x => x.ID === el.closest(".station").dataset.id);
-    el.classList.remove("song"); el.textContent = s ? genreText(s) : "";
-  });
-  if (song) {
-    const li = listEl.querySelector('.station[data-id="' + CSS.escape(current.ID) + '"] .genre');
-    if (li) { li.classList.add("song"); li.textContent = "♪ " + songText(song); }
-  }
-  document.title = song ? songText(song) + " · Jukebox" : APP_NAME;
+          const song = current && !audio.paused && meta.station === current.ID ? meta.song : null;
+          if (current && !audio.paused && audio.readyState > 2) {
+            if (song) { nowStatus.className = "status ok"; nowStatus.textContent = "Läuft: "; const b = document.createElement("b"); b.textContent = songText(song); nowStatus.appendChild(b); }
+            else setStatus("Läuft", "ok");
+          }
+          document.querySelectorAll(".station .genre.song").forEach(el => {
+            const s = STATIONS.find(x => x.ID === el.closest(".station").dataset.id);
+            el.classList.remove("song"); el.textContent = s ? genreText(s) : "";
+          });
+          if (song) {
+            const li = listEl.querySelector('.station[data-id="' + CSS.escape(current.ID) + '"] .genre');
+            if (li) { li.classList.add("song"); li.textContent = "♪ " + songText(song); }
+          }
+          document.title = song ? songText(song) + " · Jukebox" : APP_NAME;
 }
 
 /* Sperrbildschirm / Benachrichtigung */
 const APP_ART = [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }, { src: "icon-512.png", sizes: "512x512", type: "image/png" }];
 function updateMediaSession() {
-  if (!("mediaSession" in navigator) || !current) return;
-  const song = meta.station === current.ID ? meta.song : null;
-  const artwork = logoOk.get(current.ID) === true ? [{ src: logoUrl(current), sizes: "256x256" }] : APP_ART;
-  navigator.mediaSession.metadata = new MediaMetadata(song
-    ? { title: song.title, artist: song.artist || current.Name, album: current.Name, artwork }
-    : { title: current.Name, artist: APP_NAME, album: current.Genre, artwork });
+          if (!("mediaSession" in navigator) || !current) return;
+          const song = meta.station === current.ID ? meta.song : null;
+          const artwork = logoOk.get(current.ID) === true ? [{ src: logoUrl(current), sizes: "256x256" }] : APP_ART;
+          navigator.mediaSession.metadata = new MediaMetadata(song
+            ? { title: song.title, artist: song.artist || current.Name, album: current.Name, artwork }
+            : { title: current.Name, artist: APP_NAME, album: current.Genre, artwork });
 }
 if ("mediaSession" in navigator) {
-  const set = (a, h) => { try { navigator.mediaSession.setActionHandler(a, h); } catch {} };
-  set("play", () => current && play(current));
-  set("pause", stop);
-  set("stop", stop);
-  set("nexttrack", () => step(1));
-  set("previoustrack", () => step(-1));
+          const set = (a, h) => { try { navigator.mediaSession.setActionHandler(a, h); } catch {} };
+          set("play", () => current && play(current));
+          set("pause", stop);
+          set("stop", stop);
+          set("nexttrack", () => step(1));
+          set("previoustrack", () => step(-1));
 }
 
 /* Lautstärke: iOS lässt Webseiten die Lautstärke nicht ändern – dort Hinweis statt Regler */
@@ -800,20 +1748,20 @@ const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform 
 const isSafari = isIOS || (/Safari\//.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent));
 const volumeLocked = isIOS || (() => { const a = new Audio(); a.volume = 0.5; return a.volume !== 0.5; })();
 if (volumeLocked) {
-  volumeEl.hidden = true; volumeValue.hidden = true;
-  $("iosHint").hidden = false; $("volumeHint").hidden = false;
+          volumeEl.hidden = true; volumeValue.hidden = true;
+          $("iosHint").hidden = false; $("volumeHint").hidden = false;
 } else {
-  const setVolume = v => { audio.volume = v / 100; volumeValue.textContent = v + " %"; volumeEl.value = v; };
-  volumeEl.addEventListener("input", () => { setVolume(+volumeEl.value); STORE.set("volume", +volumeEl.value); });
-  setVolume(STORE.get("volume", 80));
+          const setVolume = v => { audio.volume = v / 100; volumeValue.textContent = v + " %"; volumeEl.value = v; };
+          volumeEl.addEventListener("input", () => { setVolume(+volumeEl.value); STORE.set("volume", +volumeEl.value); });
+          setVolume(STORE.get("volume", 80));
 }
 
 /* AirPlay/Bluetooth-Ausgabe (Safari auf iPhone, iPad und Mac): Knopf oben neben dem Zahnrad, immer sichtbar */
 if (window.WebKitPlaybackTargetAvailabilityEvent) {
-  const airBtn = $("airplayBtn");
-  airBtn.hidden = false;
-  audio.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", () => airBtn.classList.toggle("active", !!audio.webkitCurrentPlaybackTargetIsWireless));
-  airBtn.addEventListener("click", () => { try { audio.webkitShowPlaybackTargetPicker(); } catch {} });
+          const airBtn = $("airplayBtn");
+          airBtn.hidden = false;
+          audio.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", () => airBtn.classList.toggle("active", !!audio.webkitCurrentPlaybackTargetIsWireless));
+          airBtn.addEventListener("click", () => { try { audio.webkitShowPlaybackTargetPicker(); } catch {} });
 }
 
 /* Einstellungen */
@@ -827,55 +1775,68 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && sheet.clas
 /* Eigene Sender (wie Desktop): IDs ab 1001, gespeichert im Browser dieses Geräts */
 const genreText = s => s.Own ? s.Genre + " · Eigener Sender" : s.Genre;
 const ownStations = () => [].concat(STORE.get("own", []) || []).filter(s => s && s.ID && s.Name && s.URL);
-const nextOwnId = () => String(ownStations().reduce((max, s) => Math.max(max, parseInt(s.ID, 10) || 0), 1000) + 1);
+const nextOwnId = () => String([...ownStations(), ...BASE_STATIONS].reduce((max, s) => Math.max(max, parseInt(s.ID, 10) || 0), 1000) + 1);
+/* Eigene Sender bleiben getrennt von radiostation.json. Kollidiert eine ID mit der Liste, bekommt der eigene
+           Sender eine freie ID; steht dieselbe Adresse inzwischen in der Liste, wird nur der Listen-Eintrag gezeigt */
 function buildStations() {
-  STATIONS = normalizeStations([...BASE_STATIONS, ...ownStations().map(s => ({ ...s, Own: true }))]);
-  if (current) current = STATIONS.find(s => s.ID === current.ID) || current;
+          const baseIds = new Set(BASE_STATIONS.map(s => s.ID)), baseKeys = new Set(BASE_STATIONS.map(s => s.Key));
+          let own = ownStations(), changed = false;
+          for (const o of own) {
+            if (baseIds.has(String(o.ID)) || own.filter(x => String(x.ID) === String(o.ID)).length > 1) {
+              const used = [...baseIds, ...own.map(x => String(x.ID))].map(Number).filter(n => !isNaN(n));
+              o.ID = String(Math.max(1000, ...used) + 1); changed = true;
+            }
+          }
+          if (changed) STORE.set("own", own);
+          own = own.filter(o => !baseKeys.has(normalizeUrl(String(o.URL))));
+          STATIONS = normalizeStations([...BASE_STATIONS, ...own.map(s => ({ ...s, Own: true }))]);
+          if (current) current = STATIONS.find(s => s.Key === current.Key) || STATIONS.find(s => sameName(s.Name, current.Name)) || current;
+          resolveFavorites();
 }
 function refreshStations() {
-  buildStations(); setVersion(); renderChips(); renderList(); renderOwn(); renderGenreTips();
+          buildStations(); setVersion(); renderChips(); renderList(); renderOwn(); renderGenreTips();
 }
 function setAddStatus(text, kind) { const el = $("addStatus"); el.textContent = text; el.className = "add-status" + (kind ? " " + kind : ""); }
 function renderGenreTips() {
-  const box = $("genreTips"); box.replaceChildren();
-  for (const g of [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"))) {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = g;
-    b.addEventListener("click", () => { $("newGenre").value = g; });
-    box.appendChild(b);
-  }
+          const box = $("genreTips"); box.replaceChildren();
+          for (const g of [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"))) {
+            const b = document.createElement("button"); b.type = "button"; b.textContent = g;
+            b.addEventListener("click", () => { $("newGenre").value = g; });
+            box.appendChild(b);
+          }
 }
 function renderOwn() {
-  const own = STATIONS.filter(s => s.Own), rows = $("ownRows");
-  $("ownList").hidden = own.length === 0;
-  rows.replaceChildren();
-  for (const s of own) {
-    const row = document.createElement("div");
-    row.className = "own-row";
-    row.innerHTML = '<span class="st-logo"></span><div class="info"><div class="name"></div><div class="url"></div></div><button class="del" type="button" aria-label="Sender löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
-    fillLogo(row.querySelector(".st-logo"), s);
-    row.querySelector(".name").textContent = s.ID + " · " + s.Name;
-    row.querySelector(".url").textContent = s.URL;
-    row.querySelector(".del").addEventListener("click", () => {
-      if (!confirm("„" + s.Name + "“ löschen?")) return;
-      STORE.set("own", ownStations().filter(o => String(o.ID) !== s.ID));
-      favorites.delete(s.ID); STORE.set("favorites", [...favorites]);
-      refreshStations(); prepareAddForm();
-      setAddStatus("„" + s.Name + "“ wurde gelöscht.");
-    });
-    rows.appendChild(row);
-  }
+          const own = STATIONS.filter(s => s.Own), rows = $("ownRows");
+          $("ownList").hidden = own.length === 0;
+          rows.replaceChildren();
+          for (const s of own) {
+            const row = document.createElement("div");
+            row.className = "own-row";
+            row.innerHTML = '<span class="st-logo"></span><div class="info"><div class="name"></div><div class="url"></div></div><button class="del" type="button" aria-label="Sender löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
+            fillLogo(row.querySelector(".st-logo"), s);
+            row.querySelector(".name").textContent = s.ID + " · " + s.Name;
+            row.querySelector(".url").textContent = s.URL;
+            row.querySelector(".del").addEventListener("click", () => {
+              if (!confirm("„" + s.Name + "“ löschen?")) return;
+              STORE.set("own", ownStations().filter(o => String(o.ID) !== s.ID));
+              if (favorites.has(s.ID)) toggleFavorite(s);
+              refreshStations(); prepareAddForm();
+              setAddStatus("„" + s.Name + "“ wurde gelöscht.");
+            });
+            rows.appendChild(row);
+          }
 }
 function prepareAddForm() { $("newId").value = nextOwnId(); renderGenreTips(); renderOwn(); }
 $("saveStation").addEventListener("click", () => {
-  const name = $("newName").value.trim(), genre = $("newGenre").value.trim(), url = $("newUrl").value.trim();
-  if (!name || !url) { setAddStatus("Bitte Name und URL ausfüllen.", "err"); return; }
-  if (!/^https?:\/\/\S+$/i.test(url)) { setAddStatus("Die URL muss mit http:// oder https:// beginnen.", "err"); return; }
-  if (STATIONS.some(s => s.URL === normalizeUrl(url))) { setAddStatus("Dieser Sender (URL) ist bereits vorhanden.", "warn"); return; }
-  const entry = { ID: nextOwnId(), Name: name, Genre: genre || "Sonstiges", URL: url };
-  STORE.set("own", [...ownStations(), entry]);
-  refreshStations();
-  $("newName").value = ""; $("newGenre").value = ""; $("newUrl").value = ""; $("newId").value = nextOwnId();
-  setAddStatus("„" + name + "“ wurde gespeichert (ID " + entry.ID + ")." + (/^http:/i.test(url) ? " Hinweis: wird über https abgespielt." : ""), "ok");
+          const name = $("newName").value.trim(), genre = $("newGenre").value.trim(), url = $("newUrl").value.trim();
+          if (!name || !url) { setAddStatus("Bitte Name und URL ausfüllen.", "err"); return; }
+          if (!/^https?:\/\/\S+$/i.test(url)) { setAddStatus("Die URL muss mit http:// oder https:// beginnen.", "err"); return; }
+          if (STATIONS.some(s => s.URL === normalizeUrl(url))) { setAddStatus("Dieser Sender (URL) ist bereits vorhanden.", "warn"); return; }
+          const entry = { ID: nextOwnId(), Name: name, Genre: genre || "Sonstiges", URL: url };
+          STORE.set("own", [...ownStations(), entry]);
+          refreshStations();
+          $("newName").value = ""; $("newGenre").value = ""; $("newUrl").value = ""; $("newId").value = nextOwnId();
+          setAddStatus("„" + name + "“ wurde gespeichert (ID " + entry.ID + ")." + (/^http:/i.test(url) ? " Hinweis: wird über https abgespielt." : ""), "ok");
 });
 $("newUrl").addEventListener("keydown", e => { if (e.key === "Enter") $("saveStation").click(); });
 backdrop.addEventListener("click", () => toggleSheet(false));
@@ -885,31 +1846,31 @@ searchEl.addEventListener("input", renderList);
 /* Start: Senderliste laden, letzten Sender vorauswählen (abspielen erst nach Tipp) */
 function setVersion() { $("version").textContent = APP_NAME + " Player " + APP_VERSION + " · " + STATIONS.length + " Sender"; }
 function loadStations() {
-  fetch("radiostation.json", { cache: "no-cache" })
-    .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
-    .then(text => {
-      const list = normalizeStations(JSON.parse(text.replace(/^\uFEFF/, "")));
-      if (list.length === 0) throw new Error("Leere Liste");
-      BASE_STATIONS = list;
-      buildStations();
-      const last = STATIONS.find(s => s.ID === (current ? current.ID : STORE.get("last", null)));
-      if (last && !current) { selectStation(last); setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
-      else if (last) current = last;
-      setVersion();
-      renderChips();
-      renderList();
-      updatePlayButton();
-    })
-    .catch(() => {
-      listEl.innerHTML = '<li class="empty">Senderliste konnte nicht geladen werden.<br><button id="retryBtn">Erneut versuchen</button></li>';
-      $("retryBtn").addEventListener("click", loadStations);
-    });
+          fetch("radiostation.json", { cache: "no-cache" })
+            .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
+            .then(text => {
+              const list = normalizeStations(JSON.parse(text.replace(/^\uFEFF/, "")));
+              if (list.length === 0) throw new Error("Leere Liste");
+              BASE_STATIONS = list;
+              buildStations();
+              const last = current ? STATIONS.find(s => s.ID === current.ID) : findLast();
+              if (last && !current) { selectStation(last); setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
+              else if (last) current = last;
+              setVersion();
+              renderChips();
+              renderList();
+              updatePlayButton();
+            })
+            .catch(() => {
+              listEl.innerHTML = '<li class="empty">Senderliste konnte nicht geladen werden.<br><button id="retryBtn">Erneut versuchen</button></li>';
+              $("retryBtn").addEventListener("click", loadStations);
+            });
 }
 setVersion();
 updatePlayButton();
 loadStations();
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
-</script>
+    </script>
 </body>
 </html>
