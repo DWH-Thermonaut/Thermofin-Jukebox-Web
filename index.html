@@ -11,8 +11,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jukebox">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png?v=1.4.1">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1.4.1">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root {
   --bg: #f8f9fb; --surface: #ffffff; --surface-alt: #eef0f3; --text: #202020; --text-2: #646464;
@@ -42,6 +42,9 @@ header {
 .logo-dark { display: none; }
 html[data-theme="dark"] .logo-light, html[data-theme="neon"] .logo-light { display: none; }
 html[data-theme="dark"] .logo-dark, html[data-theme="neon"] .logo-dark { display: block; }
+.logo-theme { display: none; }
+html[data-logo] .logo-light, html[data-logo] .logo-dark { display: none; }
+html[data-logo] .logo-theme { display: block; }
 .spacer { flex: 1; }
 .icon-btn {
   width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
@@ -128,22 +131,23 @@ ul { list-style: none; margin: 0; padding: 0; }
 }
 .sheet.open, .sheet-backdrop.open { display: block; }
 .sheet h2 { margin: 0 0 12px; font-size: 18px; }
-.seg { display: flex; background: var(--surface-alt); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface-alt); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg .wide { grid-column: span 2; }
 .seg button { flex: 1; padding: 9px 4px; border-radius: 8px; font-size: 14px; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .sheet p { color: var(--text-2); font-size: 13px; line-height: 1.45; margin: 14px 0 0; }
 .sheet .close { margin-top: 16px; width: 100%; padding: 12px; border-radius: 10px; background: var(--surface-alt); font-weight: 600; }
 .version { color: var(--text-2); font-size: 12px; margin-top: 12px; text-align: center; }
+/* Effekt-Designs (wie Desktop-Version): Farben und Effekte über Variablen, gemeinsame Regeln über data-fx */
 html[data-theme="neon"] {
   --bg: #0a0614; --surface: rgba(18, 10, 38, .88); --surface-alt: rgba(42, 26, 82, .55); --text: #eafcff; --text-2: #9ea6cf;
   --border: rgba(138, 92, 255, .28); --accent: #19f0ff; --accent-text: #05020c; --play: #ff2bd6; --danger: #ff4d6d;
   --list-text: #19f0ff; --warm: #ffd23f; --shadow: 0 -8px 32px rgba(255, 43, 214, .22);
-  --neon-c: #19f0ff; --neon-m: #ff2bd6; --neon-v: #8a5cff;
-}
-html[data-theme="neon"] body { background: transparent; }
-html[data-theme="neon"] body::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background:
+  --fx-chip: linear-gradient(90deg, #19f0ff, #8a5cff 60%, #ff2bd6); --fx-play: linear-gradient(135deg, #ff2bd6, #8a5cff);
+  --fx-line: linear-gradient(90deg, #19f0ff, #8a5cff, #ff2bd6); --fx-row: linear-gradient(90deg, rgba(25, 240, 255, .10), rgba(255, 43, 214, .06) 70%, transparent);
+  --glow-a: rgba(25, 240, 255, .7); --glow-p: rgba(255, 43, 214, .6); --fx-btn-line: rgba(25, 240, 255, .25); --fx-input-line: rgba(25, 240, 255, .35);
+  --fx-slider: #ff2bd6; --fx-header: rgba(10, 6, 20, .72); --fx-sheet: #120a26;
+  --fx-bg:
     radial-gradient(55vmax 45vmax at 105% -5%, rgba(255, 43, 214, .26), transparent 62%),
     radial-gradient(50vmax 50vmax at -15% 45%, rgba(25, 240, 255, .17), transparent 60%),
     radial-gradient(45vmax 40vmax at 75% 105%, rgba(138, 92, 255, .30), transparent 62%),
@@ -151,25 +155,75 @@ html[data-theme="neon"] body::before {
     linear-gradient(90deg, rgba(138, 92, 255, .07) 1px, transparent 1px) 0 0 / 44px 100%,
     #0a0614;
 }
-html[data-theme="neon"] header { background: rgba(10, 6, 20, .72); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom-color: rgba(25, 240, 255, .25); }
-html[data-theme="neon"] .search { background: rgba(18, 10, 38, .7); border-color: rgba(25, 240, 255, .35); }
-html[data-theme="neon"] .search:focus-within { box-shadow: 0 0 0 1px var(--neon-c), 0 0 16px rgba(25, 240, 255, .45); }
-html[data-theme="neon"] .chip[aria-pressed="true"], html[data-theme="neon"] .seg button[aria-pressed="true"] {
-  background: linear-gradient(90deg, var(--neon-c), var(--neon-v) 60%, var(--neon-m)); color: #05020c; box-shadow: 0 0 14px rgba(25, 240, 255, .45);
+html[data-theme="sunset"] {
+  --bg: #2a0410; --surface: rgba(42, 6, 16, .80); --surface-alt: rgba(58, 8, 20, .70); --text: #fff4e6; --text-2: #f2bfa4;
+  --border: rgba(255, 154, 74, .25); --accent: #ffb030; --accent-text: #2a0410; --play: #ff5a1e; --danger: #ff6b5a;
+  --list-text: #ffc24a; --warm: #ffd04a; --shadow: 0 -8px 32px rgba(255, 90, 30, .28);
+  --fx-chip: linear-gradient(135deg, #ffd04a, #ff8a1e, #e2461c, #a3151f); --fx-play: linear-gradient(135deg, #ffd04a, #ff5a1e, #8e0f22);
+  --fx-line: linear-gradient(90deg, #ffd04a, #ff8a1e, #e2461c, #a3151f); --fx-row: linear-gradient(135deg, rgba(255, 138, 30, .20), rgba(226, 70, 28, .08), transparent);
+  --glow-a: rgba(255, 138, 30, .7); --glow-p: rgba(255, 90, 30, .7); --fx-btn-line: rgba(255, 154, 74, .40); --fx-input-line: rgba(255, 154, 74, .50);
+  --fx-slider: #ff8a1e; --fx-header: rgba(42, 4, 16, .70); --fx-sheet: #2e0612; --fx-list: rgba(42, 4, 16, .22);
+  --fx-frame: linear-gradient(135deg, #ffe07a, #ff9a2a, #e2461c, #b01828);
+  --fx-bg: linear-gradient(rgba(42, 4, 16, .30), rgba(42, 4, 16, .62)), url("themes/Sonnenuntergang.jpg") 68% center / cover no-repeat, #2a0410;
 }
-html[data-theme="neon"] .station.playing { background: linear-gradient(90deg, rgba(25, 240, 255, .10), rgba(255, 43, 214, .06) 70%, transparent); box-shadow: inset 3px 0 0 var(--neon-c); }
-html[data-theme="neon"] .station.playing .name { text-shadow: 0 0 10px rgba(25, 240, 255, .8); }
-html[data-theme="neon"] .eq i { box-shadow: 0 0 6px var(--neon-c); }
-html[data-theme="neon"] .fav[aria-pressed="true"] { filter: drop-shadow(0 0 6px rgba(255, 210, 63, .8)); }
-html[data-theme="neon"] .st-logo { border-color: rgba(25, 240, 255, .3); box-shadow: 0 0 10px rgba(138, 92, 255, .25); }
-html[data-theme="neon"] .player { border-top: 1px solid transparent; border-image: linear-gradient(90deg, var(--neon-c), var(--neon-v), var(--neon-m)) 1; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
-html[data-theme="neon"] .play-btn { background: linear-gradient(135deg, var(--neon-m), var(--neon-v)); box-shadow: 0 0 18px rgba(255, 43, 214, .6), 0 0 4px rgba(255, 43, 214, .9); }
-html[data-theme="neon"] .now .status.ok { color: var(--neon-c); text-shadow: 0 0 8px rgba(25, 240, 255, .5); }
-html[data-theme="neon"] .now .status b { color: #ffffff; }
-html[data-theme="neon"] .volume input { accent-color: var(--neon-m); }
-html[data-theme="neon"] .icon-btn, html[data-theme="neon"] .round { box-shadow: inset 0 0 0 1px rgba(25, 240, 255, .25); }
-html[data-theme="neon"] .chips { padding: 10px 6px 6px; margin: 0 -6px; }
-html[data-theme="neon"] .sheet { background: #120a26; border-top: 1px solid rgba(25, 240, 255, .35); box-shadow: 0 -10px 40px rgba(138, 92, 255, .35); }
+html[data-theme="thermofin"] {
+  --bg: #0b1b38; --surface: rgba(11, 27, 56, .80); --surface-alt: rgba(16, 36, 72, .70); --text: #f2f5fa; --text-2: #a9b6cb;
+  --border: rgba(184, 194, 209, .25); --accent: #e3263b; --accent-text: #ffffff; --play: #e3263b; --danger: #ff5a6a;
+  --list-text: #ff6b7a; --warm: #f2b705; --shadow: 0 -8px 32px rgba(0, 0, 0, .35);
+  --fx-chip: linear-gradient(90deg, #e3263b, #b8172c); --fx-play: linear-gradient(135deg, #f0384c, #b8172c);
+  --fx-line: linear-gradient(90deg, #b8c2d1, #ffffff, #e3263b); --fx-row: linear-gradient(90deg, rgba(227, 38, 59, .20), rgba(27, 58, 107, .08), transparent);
+  --glow-a: rgba(227, 38, 59, .35); --glow-p: rgba(227, 38, 59, .5); --fx-btn-line: rgba(184, 194, 209, .47); --fx-input-line: rgba(184, 194, 209, .55);
+  --fx-slider: #e3263b; --fx-header: rgba(11, 27, 56, .72); --fx-sheet: #0f2246; --fx-list: rgba(11, 27, 56, .55);
+  --fx-bg: linear-gradient(rgba(11, 27, 56, .45), rgba(11, 27, 56, .70)), url("themes/Thermofin.jpg") 62% center / cover no-repeat, #0b1b38;
+}
+@property --cyc0 { syntax: "<color>"; inherits: true; initial-value: #ffe600; }
+@property --cyc1 { syntax: "<color>"; inherits: true; initial-value: #7cff1e; }
+@property --cyc2 { syntax: "<color>"; inherits: true; initial-value: #19b8ff; }
+@property --cyc3 { syntax: "<color>"; inherits: true; initial-value: #ff2e97; }
+@keyframes cyc0 { 0% { --cyc0: #ffe600; } 25% { --cyc0: #7cff1e; } 50% { --cyc0: #19b8ff; } 75% { --cyc0: #ff2e97; } 100% { --cyc0: #ffe600; } }
+@keyframes cyc1 { 0% { --cyc1: #7cff1e; } 25% { --cyc1: #19b8ff; } 50% { --cyc1: #ff2e97; } 75% { --cyc1: #ffe600; } 100% { --cyc1: #7cff1e; } }
+@keyframes cyc2 { 0% { --cyc2: #19b8ff; } 25% { --cyc2: #ff2e97; } 50% { --cyc2: #ffe600; } 75% { --cyc2: #7cff1e; } 100% { --cyc2: #19b8ff; } }
+@keyframes cyc3 { 0% { --cyc3: #ff2e97; } 25% { --cyc3: #ffe600; } 50% { --cyc3: #7cff1e; } 75% { --cyc3: #19b8ff; } 100% { --cyc3: #ff2e97; } }
+html[data-theme="abstrakt"] {
+  animation: cyc0 15s linear infinite, cyc1 15s linear infinite, cyc2 15s linear infinite, cyc3 15s linear infinite;
+  --bg: #05060f; --surface: rgba(10, 12, 22, .80); --surface-alt: rgba(20, 24, 36, .63); --text: #f7fff2; --text-2: #aeb7c8;
+  --border: rgba(255, 255, 255, .20); --accent: var(--cyc0); --accent-text: #06070f; --play: #ff2e97; --danger: #ff4d6d;
+  --list-text: var(--cyc0); --warm: #ffe600; --shadow: 0 -8px 32px rgba(0, 0, 0, .45);
+  --fx-chip: linear-gradient(90deg, var(--cyc0), var(--cyc1)); --fx-play: linear-gradient(135deg, var(--cyc2), var(--cyc3));
+  --fx-line: linear-gradient(90deg, var(--cyc0), var(--cyc1), var(--cyc2), var(--cyc3));
+  --fx-row: linear-gradient(90deg, color-mix(in srgb, var(--cyc0) 18%, transparent), color-mix(in srgb, var(--cyc0) 6%, transparent) 70%, transparent);
+  --glow-a: color-mix(in srgb, var(--cyc0) 70%, transparent); --glow-p: color-mix(in srgb, var(--cyc3) 70%, transparent);
+  --fx-btn-line: color-mix(in srgb, var(--cyc0) 40%, transparent); --fx-input-line: color-mix(in srgb, var(--cyc0) 50%, transparent);
+  --fx-slider: var(--cyc3); --fx-header: rgba(5, 6, 15, .70); --fx-sheet: #0a0c16; --fx-list: rgba(5, 6, 15, .22);
+  --fx-bg: linear-gradient(rgba(5, 6, 15, .30), rgba(5, 6, 15, .55)), url("themes/Abstrakt.jpg") center / cover no-repeat, #05060f;
+}
+@media (prefers-reduced-motion: reduce) { html[data-theme="abstrakt"] { animation: none; } }
+html[data-fx] body { background: transparent; }
+html[data-fx] { background: var(--bg); }
+html[data-fx] body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--fx-bg); }
+html[data-fx] header { background: var(--fx-header); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom-color: var(--fx-btn-line); }
+html[data-fx] .search { background: var(--surface); border-color: var(--fx-input-line); }
+html[data-fx] .search:focus-within { box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--glow-a); }
+html[data-fx] .chips { padding: 10px 6px 6px; margin: 0 -6px; }
+html[data-fx] .chip { background: var(--surface-alt); }
+html[data-fx] .chip[aria-pressed="true"], html[data-fx] .seg button[aria-pressed="true"] { background: var(--fx-chip); color: var(--accent-text); box-shadow: 0 0 14px var(--glow-a); }
+html[data-fx] .station { background-color: var(--fx-list, transparent); }
+html[data-fx] .station.playing { background: var(--fx-row); background-color: var(--fx-list, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+html[data-fx] .station.playing .name { text-shadow: 0 0 10px var(--glow-a); }
+html[data-fx] .eq i { box-shadow: 0 0 6px var(--glow-a); }
+html[data-fx] .fav[aria-pressed="true"] { filter: drop-shadow(0 0 6px var(--warm)); }
+html[data-fx] .st-logo { border-color: var(--fx-btn-line); box-shadow: 0 0 10px var(--glow-a); }
+html[data-fx] .player { background: var(--surface); border-top: 1px solid transparent; border-image: var(--fx-line) 1; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+html[data-fx] .play-btn { background: var(--fx-play); box-shadow: 0 0 18px var(--glow-p), 0 0 4px var(--glow-p); }
+html[data-fx] .now .status.ok { color: var(--accent); text-shadow: 0 0 8px var(--glow-a); }
+html[data-fx] .now .status b { color: #ffffff; }
+html[data-fx] .volume input { accent-color: var(--fx-slider); }
+html[data-fx] .icon-btn, html[data-fx] .round { background: var(--surface-alt); box-shadow: inset 0 0 0 1px var(--fx-btn-line); }
+html[data-fx] .sheet { background: var(--fx-sheet); border-top: 1px solid var(--fx-input-line); box-shadow: 0 -10px 40px var(--glow-a); }
+/* Sonnenuntergang: glühende Verlaufsrahmen */
+html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[data-theme="sunset"] .round, html[data-theme="sunset"] .chip:not([aria-pressed="true"]) {
+  border: 2px solid transparent; background: linear-gradient(var(--fx-sheet), var(--fx-sheet)) padding-box, var(--fx-frame) border-box; box-shadow: 0 0 12px rgba(255, 138, 30, .45);
+}
 </style>
 </head>
 <body>
@@ -177,6 +231,7 @@ html[data-theme="neon"] .sheet { background: #120a26; border-top: 1px solid rgba
   <div class="top">
     <img class="logo logo-light" src="logo.png" alt="DWH’s Jukebox Player">
     <img class="logo logo-dark" src="logo_dark.png" alt="DWH’s Jukebox Player">
+    <img class="logo logo-theme" id="themeLogo" alt="DWH’s Jukebox Player">
     <span class="spacer"></span>
     <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -225,6 +280,9 @@ html[data-theme="neon"] .sheet { background: #120a26; border-top: 1px solid rgba
     <button data-theme="light">Hell</button>
     <button data-theme="dark">Dunkel</button>
     <button data-theme="neon">Neon</button>
+    <button data-theme="abstrakt">Abstrakt</button>
+    <button data-theme="sunset" class="wide">Sonnenuntergang</button>
+    <button data-theme="thermofin">Thermofin</button>
   </div>
   <p>Installieren: <b>iPhone</b> – in Safari Teilen → „Zum Home-Bildschirm“. <b>Android</b> – in Chrome Menü ⋮ → „Zum Startbildschirm hinzufügen“ bzw. „App installieren“.</p>
   <p>Titelanzeige: Titel und Interpret erscheinen, sobald der Sender sie bereitstellt. Nicht jeder Sender liefert diese Angaben.</p>
@@ -237,7 +295,7 @@ html[data-theme="neon"] .sheet { background: #120a26; border-top: 1px solid rgba
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.4.1";
+const APP_VERSION = "1.5.0";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
@@ -277,11 +335,21 @@ let failed = new Set();
 
 /* Design: auto folgt dem Handy, hell/dunkel erzwingt es */
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+const FX_THEMES = {
+  neon: { color: "#0a0614" },
+  abstrakt: { color: "#05060f", logo: "themes/logo_abstrakt.png" },
+  sunset: { color: "#2a0410", logo: "themes/logo_sunset.png" },
+  thermofin: { color: "#0b1b38", logo: "themes/logo_thermofin.png" }
+};
 let themeMode = STORE.get("theme", "auto");
+if (!["auto", "light", "dark"].includes(themeMode) && !FX_THEMES[themeMode]) themeMode = "auto";
 function applyTheme() {
+  const fx = FX_THEMES[themeMode], root = document.documentElement;
   const dark = themeMode === "dark" || (themeMode === "auto" && darkQuery.matches);
-  document.documentElement.dataset.theme = themeMode === "neon" ? "neon" : dark ? "dark" : "light";
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", themeMode === "neon" ? "#0a0614" : m.dataset.orig));
+  root.dataset.theme = fx ? themeMode : dark ? "dark" : "light";
+  if (fx) root.dataset.fx = ""; else delete root.dataset.fx;
+  if (fx && fx.logo) { $("themeLogo").src = fx.logo; root.dataset.logo = ""; } else delete root.dataset.logo;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", fx ? fx.color : m.dataset.orig));
   document.querySelectorAll("#themeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === themeMode));
 }
 darkQuery.addEventListener("change", applyTheme);
