@@ -51,6 +51,8 @@ html[data-logo] .logo-theme { display: block; }
   background: var(--surface-alt); color: var(--text); flex: 0 0 auto;
 }
 .icon-btn svg { width: 22px; height: 22px; }
+.top .icon-btn + .icon-btn { margin-left: -4px; }
+#airplayBtn.active { color: var(--accent); }
 .search {
   margin-top: 10px; display: flex; align-items: center; gap: 8px; background: var(--surface);
   border: 1px solid var(--border); border-radius: 12px; padding: 0 12px;
@@ -272,6 +274,9 @@ html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[dat
     <img class="logo logo-dark" src="logo_dark.png" alt="DWH’s Jukebox Player">
     <img class="logo logo-theme" id="themeLogo" alt="DWH’s Jukebox Player">
     <span class="spacer"></span>
+    <button class="icon-btn" id="airplayBtn" aria-label="AirPlay / Bluetooth-Ausgabe wählen" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><path d="m12 15 5 6H7z"/></svg>
+    </button>
     <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
     </button>
@@ -293,9 +298,6 @@ html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[dat
       <div class="title" id="nowTitle">Kein Sender gewählt</div>
       <div class="status" id="nowStatus">Tippe auf einen Sender</div>
     </div>
-    <button class="round" id="airplayBtn" aria-label="AirPlay" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><path d="m12 15 5 6H7z"/></svg>
-    </button>
     <button class="round" id="randomBtn" aria-label="Zufallssender">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
     </button>
@@ -361,7 +363,7 @@ html[data-theme="sunset"] .search, html[data-theme="sunset"] .icon-btn, html[dat
 <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
 <script>
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.6.1";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
@@ -806,11 +808,12 @@ if (volumeLocked) {
   setVolume(STORE.get("volume", 80));
 }
 
-/* AirPlay (nur Safari, wenn ein Gerät verfügbar ist) */
+/* AirPlay/Bluetooth-Ausgabe (Safari auf iPhone, iPad und Mac): Knopf oben neben dem Zahnrad, immer sichtbar */
 if (window.WebKitPlaybackTargetAvailabilityEvent) {
   const airBtn = $("airplayBtn");
-  audio.addEventListener("webkitplaybacktargetavailabilitychanged", e => { airBtn.hidden = e.availability !== "available"; });
-  airBtn.addEventListener("click", () => audio.webkitShowPlaybackTargetPicker());
+  airBtn.hidden = false;
+  audio.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", () => airBtn.classList.toggle("active", !!audio.webkitCurrentPlaybackTargetIsWireless));
+  airBtn.addEventListener("click", () => { try { audio.webkitShowPlaybackTargetPicker(); } catch {} });
 }
 
 /* Einstellungen */
