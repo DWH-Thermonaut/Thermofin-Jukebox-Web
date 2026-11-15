@@ -868,5 +868,17 @@
     "Name": "bigFM Party",
     "Genre": "Dance",
     "URL": "https://stream.bigfm.de/party/mp3-128/"
+  },
+  {
+    "ID": "146",
+    "Name": "sunshine live 80er",
+    "Genre": "80er",
+    "URL": "https://stream.sunshine-live.de/80er/mp3-192/&utm_source=radio.menu/"
+  },
+  {
+    "ID": "147",
+    "Name": "sunshine live 90er",
+    "Genre": "90er",
+    "URL": "https://stream.sunshine-live.de/90er/mp3-192/&utm_source=radio.menu/"
   }
 ]
