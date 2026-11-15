@@ -5,12 +5,23 @@
 import { connect } from "cloudflare:sockets";
 
 const PROXY_HOSTS = /(^|\.)somafm\.com$/i;
+// Nur diese Webseiten dürfen den Dienst aus dem Browser nutzen. Anfragen ohne Herkunftsangabe (Desktop-Jukebox) bleiben erlaubt.
+const ALLOWED_ORIGINS = ["https://dwh-thermonaut.github.io"];
 const MAX_BYTES = 256 * 1024;
 const TIMEOUT_MS = 8000;
 const CACHE_SECONDS = 15;
 
-const CORS = { "Access-Control-Allow-Origin": "*" };
-const JSON_HEADERS = { ...CORS, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=" + CACHE_SECONDS };
+// Herkunft prüfen: Origin (fetch aus dem Browser) oder Referer (Audio-Element); fehlt beides, ist es kein fremder Browser-Aufruf
+function callerAllowed(request) {
+  const origin = request.headers.get("Origin"), referer = request.headers.get("Referer");
+  let source = origin || "";
+  if (!source && referer) { try { source = new URL(referer).origin; } catch { return false; } }
+  return !source || ALLOWED_ORIGINS.includes(source);
+}
+function corsFor(request) {
+  const origin = request.headers.get("Origin");
+  return { "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0], "Vary": "Origin" };
+}
 
 function splitTitle(text) {
   text = String(text || "").replace(/\0+$/, "").trim();
@@ -99,7 +110,7 @@ async function streamTitle(url) {
   } finally { clearTimeout(timer); }
 }
 
-async function proxyStream(url, ctx) {
+async function proxyStream(url, ctx, CORS) {
   const raw = await openRaw(url, false);
   const { readable, writable } = typeof IdentityTransformStream === "function" ? new IdentityTransformStream() : new TransformStream();
   raw.reader.releaseLock();
@@ -115,15 +126,18 @@ async function proxyStream(url, ctx) {
 
 export default {
   async fetch(request, env, ctx) {
+    const CORS = corsFor(request);
+    const JSON_HEADERS = { ...CORS, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=" + CACHE_SECONDS };
+    if (!callerAllowed(request)) return new Response(JSON.stringify({ error: "Herkunft nicht erlaubt" }), { status: 403, headers: JSON_HEADERS });
     if (request.method === "OPTIONS") return new Response(null, { headers: { ...CORS, "Access-Control-Allow-Methods": "GET" } });
     const reqUrl = new URL(request.url), url = reqUrl.searchParams.get("url") || "";
     if (!/^https?:\/\/[^\s]+$/i.test(url)) return new Response(JSON.stringify({ error: "Parameter url fehlt" }), { status: 400, headers: JSON_HEADERS });
     if (reqUrl.pathname.replace(/\/+$/, "").endsWith("/stream")) {
       if (!PROXY_HOSTS.test(new URL(url).hostname)) return new Response("Server nicht freigegeben", { status: 403, headers: CORS });
-      try { return await proxyStream(url, ctx); } catch (e) { return new Response(String(e.message || e), { status: 502, headers: CORS }); }
+      try { return await proxyStream(url, ctx, CORS); } catch (e) { return new Response(String(e.message || e), { status: 502, headers: CORS }); }
     }
     const cache = typeof caches !== "undefined" ? caches.default : null, key = new Request(reqUrl.origin + "/?url=" + encodeURIComponent(url), { method: "GET" });
-    if (cache) { const hit = await cache.match(key); if (hit) return hit; }
+    if (cache) { const hit = await cache.match(key); if (hit) return new Response(hit.body, { headers: JSON_HEADERS }); }
     let body;
     try { body = await streamTitle(url); } catch (e) { body = { error: e.name === "AbortError" ? "Zeitüberschreitung" : String(e.message || e) }; }
     const res = new Response(JSON.stringify(body), { headers: JSON_HEADERS });

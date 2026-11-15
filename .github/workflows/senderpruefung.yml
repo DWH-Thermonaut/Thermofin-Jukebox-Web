@@ -1,0 +1,48 @@
+# Prüft täglich alle Sender aus radiostation.json und meldet defekte Sender als GitHub-Issue.
+# Läuft außerdem nach jeder Änderung an radiostation.json und lässt sich unter "Actions" von Hand starten.
+name: Senderprüfung
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  push:
+    paths:
+      - radiostation.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sender prüfen
+        id: check
+        run: node tools/check-stations.mjs radiostation.json report.md
+
+      - name: Ergebnis melden
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFEKT: ${{ steps.check.outputs.defekt }}
+        run: |
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          gh label create senderpruefung --color D93F0B --description "Automatische Senderprüfung" --force
+          nr=$(gh issue list --label senderpruefung --state open --json number --jq '.[0].number // empty')
+          if [ "$DEFEKT" != "0" ]; then
+            title="Senderprüfung: $DEFEKT Sender nicht erreichbar"
+            if [ -n "$nr" ]; then
+              gh issue edit "$nr" --title "$title" --body-file report.md
+            else
+              gh issue create --title "$title" --label senderpruefung --body-file report.md
+            fi
+          elif [ -n "$nr" ]; then
+            gh issue close "$nr" --comment "Alle Sender laufen wieder."
+          fi
