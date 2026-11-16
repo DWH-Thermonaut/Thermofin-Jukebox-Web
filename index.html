@@ -86,21 +86,20 @@
             padding-right: max(16px, env(safe-area-inset-right));
             border-bottom: 1px solid var(--border);
         }
-
+        /* Negativer Abstand gleicht den transparenten Rand unter dem Logo aus: Suchleiste sitzt so dicht wie die Genre-Knöpfe darunter */
         .top {
             display: flex;
             align-items: center;
             gap: 12px;
+            margin-bottom: -7px;
         }
 
         .logo {
-            height: 76px;
-            width: auto;
+            width: min(304px, calc(100% - 52px));
+            height: auto;
+            aspect-ratio: 4 / 1;
             flex: 0 1 auto;
             min-width: 0;
-            max-width: calc(100% - 52px);
-            object-fit: contain;
-            object-position: left;
         }
 
         .logo-dark {
@@ -515,6 +514,16 @@
         .no-volume .buttons {
             flex: 1;
             justify-content: space-evenly;
+        }
+        /* Handys (nicht Tablets): Wiedergabeleiste tiefer, nur so viel Abstand nach unten, dass der Home-Balken frei bleibt */
+        @media (pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px) {
+            .player {
+                padding-bottom: max(6px, calc(env(safe-area-inset-bottom) - 20px));
+            }
+
+            main {
+                padding-bottom: calc(150px + env(safe-area-inset-bottom));
+            }
         }
         /* Touch-Geräte: keine Sendernummern, mehr Platz für Namen */
         @media (pointer: coarse) {
@@ -1588,7 +1597,7 @@
     <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
     <script>
-const APP_VERSION = "1.10.1";
+const APP_VERSION = "1.10.2";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
@@ -1596,22 +1605,22 @@ let STATIONS = [], BASE_STATIONS = [];
 
 /* Browser erlauben auf https-Seiten nur https-Streams: http-Adressen werden umgestellt */
 function normalizeUrl(url) {
-  const antenne = url.match(/^http:\/\/mp3channels\.webradio\.antenne\.de\/([^/?#]+)/);
-  if (antenne) return "https://stream.antenne.de/" + antenne[1] + "/stream/mp3";
-  const bob = url.match(/^http:\/\/streams\.radiobob\.de\/([^/]+)\/(mp3-\d+)\/mediaplayer/);
-  if (bob) return "https://streams.radiobob.de/" + bob[1] + "/" + bob[2] + "/streams.radiobob.de/";
-  return url.replace(/^http:\/\//, "https://");
+          const antenne = url.match(/^http:\/\/mp3channels\.webradio\.antenne\.de\/([^/?#]+)/);
+          if (antenne) return "https://stream.antenne.de/" + antenne[1] + "/stream/mp3";
+          const bob = url.match(/^http:\/\/streams\.radiobob\.de\/([^/]+)\/(mp3-\d+)\/mediaplayer/);
+          if (bob) return "https://streams.radiobob.de/" + bob[1] + "/" + bob[2] + "/streams.radiobob.de/";
+          return url.replace(/^http:\/\//, "https://");
 }
 function normalizeStations(list) {
-  return list
-    .filter(s => s && s.ID && s.Name && s.URL && !isNaN(parseInt(s.ID, 10)))
-    .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Key: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "", Own: !!s.Own }))
-    .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10));
+          return list
+            .filter(s => s && s.ID && s.Name && s.URL && !isNaN(parseInt(s.ID, 10)))
+            .map(s => ({ ID: String(s.ID), Name: String(s.Name), Genre: s.Genre ? String(s.Genre) : "Sonstiges", URL: normalizeUrl(String(s.URL)), Key: normalizeUrl(String(s.URL)), Logo: s.Logo ? String(s.Logo) : "", Own: !!s.Own }))
+            .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10));
 }
 
 const STORE = {
-  get(key, fallback) { try { const v = localStorage.getItem("jukebox." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
-  set(key, value) { try { localStorage.setItem("jukebox." + key, JSON.stringify(value)); } catch {} }
+          get(key, fallback) { try { const v = localStorage.getItem("jukebox." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+          set(key, value) { try { localStorage.setItem("jukebox." + key, JSON.stringify(value)); } catch {} }
 };
 
 const ALL = "Alle", FAVS = "★ Favoriten";
@@ -1622,7 +1631,7 @@ const volumeEl = $("volume"), volumeValue = $("volumeValue");
 
 let genre = STORE.get("genre", ALL);
 /* Favoriten und „zuletzt gehört“ merken sich Adresse und Name statt der ID:
-   so bleiben sie erhalten, wenn radiostation.json neu nummeriert oder ergänzt wird */
+           so bleiben sie erhalten, wenn radiostation.json neu nummeriert oder ergänzt wird */
 let favorites = new Set();
 let favRefs = [].concat(STORE.get("favs2", []) || []).filter(r => r && (r.u || r.n));
 const stationRef = s => ({ u: s.Key, n: s.Name });
@@ -1630,27 +1639,27 @@ const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || 
 const findByRef = r => r && (STATIONS.find(s => s.Key === r.u) || STATIONS.find(s => sameName(s.Name, r.n)));
 const refMatches = (r, s) => r.u === s.Key || (!STATIONS.some(x => x.Key === r.u) && sameName(r.n, s.Name));
 function resolveFavorites() {
-  const old = STORE.get("favorites", null);
-  if (old && !STORE.get("favs2", null)) {
-    favRefs = [].concat(old).map(id => STATIONS.find(s => s.ID === String(id))).filter(Boolean).map(stationRef);
-    STORE.set("favs2", favRefs);
-    try { localStorage.removeItem("jukebox.favorites"); } catch {}
-  }
-  favorites = new Set(favRefs.map(findByRef).filter(Boolean).map(s => s.ID));
+          const old = STORE.get("favorites", null);
+          if (old && !STORE.get("favs2", null)) {
+            favRefs = [].concat(old).map(id => STATIONS.find(s => s.ID === String(id))).filter(Boolean).map(stationRef);
+            STORE.set("favs2", favRefs);
+            try { localStorage.removeItem("jukebox.favorites"); } catch {}
+          }
+          favorites = new Set(favRefs.map(findByRef).filter(Boolean).map(s => s.ID));
 }
 function toggleFavorite(s) {
-  if (favorites.has(s.ID)) favRefs = favRefs.filter(r => !refMatches(r, s));
-  else favRefs.push(stationRef(s));
-  STORE.set("favs2", favRefs);
-  resolveFavorites();
+          if (favorites.has(s.ID)) favRefs = favRefs.filter(r => !refMatches(r, s));
+          else favRefs.push(stationRef(s));
+          STORE.set("favs2", favRefs);
+          resolveFavorites();
 }
 function rememberLast(s) { STORE.set("last", stationRef(s)); }
 function findLast() {
-  const last = STORE.get("last", null);
-  if (typeof last !== "string") return findByRef(last);
-  const found = STATIONS.find(s => s.ID === last);
-  if (found) rememberLast(found);
-  return found;
+          const last = STORE.get("last", null);
+          if (typeof last !== "string") return findByRef(last);
+          const found = STATIONS.find(s => s.ID === last);
+          if (found) rememberLast(found);
+          return found;
 }
 let visible = [];
 let current = null;
@@ -1659,90 +1668,90 @@ let failed = new Set();
 /* Design: auto folgt dem Handy, hell/dunkel erzwingt es */
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 const FX_THEMES = {
-  neon: { color: "#0a0614" },
-  abstrakt: { color: "#05060f", logo: "themes/logo_abstrakt.png" },
-  sunset: { color: "#2a0410", logo: "themes/logo_sunset.png" },
-  thermofin: { color: "#0b1b38", logo: "themes/logo_thermofin.png" }
+          neon: { color: "#0a0614" },
+          abstrakt: { color: "#05060f", logo: "themes/logo_abstrakt.png" },
+          sunset: { color: "#2a0410", logo: "themes/logo_sunset.png" },
+          thermofin: { color: "#0b1b38", logo: "themes/logo_thermofin.png" }
 };
 let themeMode = STORE.get("theme", "auto");
 if (!["auto", "light", "dark"].includes(themeMode) && !FX_THEMES[themeMode]) themeMode = "auto";
 function applyTheme() {
-  const fx = FX_THEMES[themeMode], root = document.documentElement;
-  const dark = themeMode === "dark" || (themeMode === "auto" && darkQuery.matches);
-  root.dataset.theme = fx ? themeMode : dark ? "dark" : "light";
-  if (fx) root.dataset.fx = ""; else delete root.dataset.fx;
-  if (fx && fx.logo) { $("themeLogo").src = fx.logo; root.dataset.logo = ""; } else delete root.dataset.logo;
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", fx ? fx.color : m.dataset.orig));
-  document.querySelectorAll("#themeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === themeMode));
+          const fx = FX_THEMES[themeMode], root = document.documentElement;
+          const dark = themeMode === "dark" || (themeMode === "auto" && darkQuery.matches);
+          root.dataset.theme = fx ? themeMode : dark ? "dark" : "light";
+          if (fx) root.dataset.fx = ""; else delete root.dataset.fx;
+          if (fx && fx.logo) { $("themeLogo").src = fx.logo; root.dataset.logo = ""; } else delete root.dataset.logo;
+          document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", fx ? fx.color : m.dataset.orig));
+          document.querySelectorAll("#themeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === themeMode));
 }
 darkQuery.addEventListener("change", applyTheme);
 document.querySelectorAll("#themeSeg button").forEach(b => b.addEventListener("click", () => {
-  themeMode = b.dataset.theme; STORE.set("theme", themeMode); applyTheme();
+          themeMode = b.dataset.theme; STORE.set("theme", themeMode); applyTheme();
 }));
 applyTheme();
 
 /* Sender-Logos: "Logo" aus radiostation.json, SomaFM-Kanallogo oder Favicon der Sender-Webseite */
 const SITE_RULES = [
-  [/regc-80s80s/, "80s80s.de"], [/mdr\.de\/mdr\/284320\//, "jumpradio.de"], [/radiotop40/, "radiotop40.de"],
-  [/swr\.de\/.*\/swr3\//, "swr3.de"], [/swr\.de\/.*\/dasding\//, "dasding.de"], [/swr\.de\/.*\/swr1bw\//, "swr1.de"],
-  [/\/wdr\/1live\//, "1live.de"], [/\/wdr\/wdr2\//, "wdr2.de"], [/\/wdr\/wdr3\//, "wdr3.de"], [/\/wdr\/wdr4\//, "wdr4.de"], [/\/wdr\/cosmo\//, "wdr.de"],
-  [/\/br\/br1\//, "bayern1.de"], [/\/br\/br3\//, "bayern3.de"], [/\/br\/brklassik\//, "br-klassik.de"], [/\/br\/brheimat\//, "br.de"],
-  [/\/hr\/hr1\//, "hr1.de"], [/\/hr\/hr3\//, "hr3.de"], [/\/hr\/youfm\//, "you-fm.de"],
-  [/\/rbb\/fritz\//, "fritz.de"], [/\/rbb\/radioeins\//, "radioeins.de"],
-  [/\/ndr\/ndr2\//, "ndr.de"], [/\/ndr\/njoy\//, "n-joy.de"],
-  [/\/m\/rsp\//, "radioswisspop.ch"], [/\/m\/rsj\//, "radioswissjazz.ch"], [/\/m\/rsc_de\//, "radioswissclassic.ch"],
-  [/\/m\/(drs3|drsvirus)\//, "srf.ch"], [/\/m\/couleur3\//, "couleur3.ch"],
-  [/ilovemusic\.de/, "iloveradio.de"], [/104\.6rtl\.com/, "104.6rtl.com"], [/89\.0rtl\.de/, "89.0rtl.de"]
+          [/regc-80s80s/, "80s80s.de"], [/mdr\.de\/mdr\/284320\//, "jumpradio.de"], [/radiotop40/, "radiotop40.de"],
+          [/swr\.de\/.*\/swr3\//, "swr3.de"], [/swr\.de\/.*\/dasding\//, "dasding.de"], [/swr\.de\/.*\/swr1bw\//, "swr1.de"],
+          [/\/wdr\/1live\//, "1live.de"], [/\/wdr\/wdr2\//, "wdr2.de"], [/\/wdr\/wdr3\//, "wdr3.de"], [/\/wdr\/wdr4\//, "wdr4.de"], [/\/wdr\/cosmo\//, "wdr.de"],
+          [/\/br\/br1\//, "bayern1.de"], [/\/br\/br3\//, "bayern3.de"], [/\/br\/brklassik\//, "br-klassik.de"], [/\/br\/brheimat\//, "br.de"],
+          [/\/hr\/hr1\//, "hr1.de"], [/\/hr\/hr3\//, "hr3.de"], [/\/hr\/youfm\//, "you-fm.de"],
+          [/\/rbb\/fritz\//, "fritz.de"], [/\/rbb\/radioeins\//, "radioeins.de"],
+          [/\/ndr\/ndr2\//, "ndr.de"], [/\/ndr\/njoy\//, "n-joy.de"],
+          [/\/m\/rsp\//, "radioswisspop.ch"], [/\/m\/rsj\//, "radioswissjazz.ch"], [/\/m\/rsc_de\//, "radioswissclassic.ch"],
+          [/\/m\/(drs3|drsvirus)\//, "srf.ch"], [/\/m\/couleur3\//, "couleur3.ch"],
+          [/ilovemusic\.de/, "iloveradio.de"], [/104\.6rtl\.com/, "104.6rtl.com"], [/89\.0rtl\.de/, "89.0rtl.de"]
 ];
 const somaChannel = url => (url.match(/somafm\.com\/([a-z0-9]+?)-\d+-mp3/i) || [])[1];
 function logoUrl(s) {
-  if (s.Logo) return s.Logo;
-  const soma = somaChannel(s.URL);
-  if (soma) return "https://api.somafm.com/logos/256/" + soma + "256.png";
-  const rule = SITE_RULES.find(r => r[0].test(s.URL));
-  const site = rule ? rule[1] : new URL(s.URL).hostname.split(".").slice(-2).join(".");
-  return "https://www.google.com/s2/favicons?domain=" + site + "&sz=128";
+          if (s.Logo) return s.Logo;
+          const soma = somaChannel(s.URL);
+          if (soma) return "https://api.somafm.com/logos/256/" + soma + "256.png";
+          const rule = SITE_RULES.find(r => r[0].test(s.URL));
+          const site = rule ? rule[1] : new URL(s.URL).hostname.split(".").slice(-2).join(".");
+          return "https://www.google.com/s2/favicons?domain=" + site + "&sz=128";
 }
 const logoOk = new Map();
 function initials(name) {
-  const words = name.replace(/^(Radio|SomaFM)\s+/i, "").split(/[\s\-–/]+/).filter(Boolean);
-  return ((words[0] || "?")[0] + (words[1] ? words[1][0] : (words[0] || "")[1] || "")).toUpperCase();
+          const words = name.replace(/^(Radio|SomaFM)\s+/i, "").split(/[\s\-–/]+/).filter(Boolean);
+          return ((words[0] || "?")[0] + (words[1] ? words[1][0] : (words[0] || "")[1] || "")).toUpperCase();
 }
 function showInitials(box, s) {
-  let h = 0; for (const c of s.Name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  box.classList.add("initials");
-  box.style.background = "hsl(" + (h % 360) + " 45% 42%)";
-  box.textContent = initials(s.Name);
+          let h = 0; for (const c of s.Name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+          box.classList.add("initials");
+          box.style.background = "hsl(" + (h % 360) + " 45% 42%)";
+          box.textContent = initials(s.Name);
 }
 function fillLogo(box, s) {
-  box.replaceChildren(); box.style.background = ""; box.classList.remove("initials");
-  if (logoOk.get(s.ID) === false) { showInitials(box, s); return; }
-  const img = new Image();
-  img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
-  img.onload = () => {
-    if (img.naturalWidth <= 16) { logoOk.set(s.ID, false); showInitials(box, s); return; }
-    logoOk.set(s.ID, true);
-    if (current && current.ID === s.ID) updateMediaSession();
-  };
-  img.onerror = () => { logoOk.set(s.ID, false); showInitials(box, s); };
-  img.src = logoUrl(s);
-  box.appendChild(img);
+          box.replaceChildren(); box.style.background = ""; box.classList.remove("initials");
+          if (logoOk.get(s.ID) === false) { showInitials(box, s); return; }
+          const img = new Image();
+          img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
+          img.onload = () => {
+            if (img.naturalWidth <= 16) { logoOk.set(s.ID, false); showInitials(box, s); return; }
+            logoOk.set(s.ID, true);
+            if (current && current.ID === s.ID) updateMediaSession();
+          };
+          img.onerror = () => { logoOk.set(s.ID, false); showInitials(box, s); };
+          img.src = logoUrl(s);
+          box.appendChild(img);
 }
 
 /* Genre-Chips */
 function renderChips() {
-  const genres = [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"));
-  const items = [ALL, FAVS, ...genres];
-  if (!items.includes(genre)) genre = ALL;
-  chipsEl.innerHTML = "";
-  for (const g of items) {
-    const chip = document.createElement("button");
-    chip.className = "chip";
-    chip.textContent = g;
-    chip.setAttribute("aria-pressed", g === genre);
-    chip.addEventListener("click", () => { genre = g; STORE.set("genre", g); renderChips(); renderList(); });
-    chipsEl.appendChild(chip);
-  }
+          const genres = [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"));
+          const items = [ALL, FAVS, ...genres];
+          if (!items.includes(genre)) genre = ALL;
+          chipsEl.innerHTML = "";
+          for (const g of items) {
+            const chip = document.createElement("button");
+            chip.className = "chip";
+            chip.textContent = g;
+            chip.setAttribute("aria-pressed", g === genre);
+            chip.addEventListener("click", () => { genre = g; STORE.set("genre", g); renderChips(); renderList(); });
+            chipsEl.appendChild(chip);
+          }
 }
 
 const starSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3 18.2 21l-1.6-7L22 9.2l-7.2-.6L12 2 9.2 8.6 2 9.2 7.4 14l-1.6 7z"/></svg>';
@@ -1750,66 +1759,66 @@ const starOutline = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 /* Senderliste */
 function renderList() {
-  const q = searchEl.value.trim().toLowerCase();
-  visible = STATIONS.filter(s =>
-    (genre === ALL || (genre === FAVS ? favorites.has(s.ID) : s.Genre === genre)) &&
-    (!q || s.Name.toLowerCase().includes(q) || s.Genre.toLowerCase().includes(q)));
-  listEl.innerHTML = "";
-  if (visible.length === 0) {
-    listEl.innerHTML = '<li class="empty">' + (genre === FAVS ? "Noch keine Favoriten – tippe auf den Stern neben einem Sender." : "Kein Sender gefunden.") + "</li>";
-  }
-  for (const s of visible) {
-    const li = document.createElement("li");
-    li.dataset.id = s.ID;
-    li.className = "station" + (current && current.ID === s.ID ? " playing" : "") + (failed.has(s.ID) ? " failed" : "") + (audio.paused ? " paused" : "");
-    li.innerHTML = '<span class="id"></span><span class="st-logo"></span><div class="info"><div class="name"></div><div class="genre"></div></div><span class="eq"><i></i><i></i><i></i></span><button class="fav"></button>';
-    li.querySelector(".id").textContent = s.ID;
-    fillLogo(li.querySelector(".st-logo"), s);
-    li.querySelector(".name").textContent = s.Name;
-    li.querySelector(".genre").textContent = genreText(s);
-    const fav = li.querySelector(".fav");
-    const isFav = favorites.has(s.ID);
-    fav.innerHTML = isFav ? starSvg : starOutline;
-    fav.setAttribute("aria-pressed", isFav);
-    fav.setAttribute("aria-label", isFav ? "Favorit entfernen" : "Als Favorit merken");
-    fav.addEventListener("click", e => {
-      e.stopPropagation();
-      toggleFavorite(s);
-      renderList();
-    });
-    li.addEventListener("click", () => play(s));
-    listEl.appendChild(li);
-  }
-  countEl.textContent = visible.length + " von " + STATIONS.length + " Sendern";
-  showSong();
+          const q = searchEl.value.trim().toLowerCase();
+          visible = STATIONS.filter(s =>
+            (genre === ALL || (genre === FAVS ? favorites.has(s.ID) : s.Genre === genre)) &&
+            (!q || s.Name.toLowerCase().includes(q) || s.Genre.toLowerCase().includes(q)));
+          listEl.innerHTML = "";
+          if (visible.length === 0) {
+            listEl.innerHTML = '<li class="empty">' + (genre === FAVS ? "Noch keine Favoriten – tippe auf den Stern neben einem Sender." : "Kein Sender gefunden.") + "</li>";
+          }
+          for (const s of visible) {
+            const li = document.createElement("li");
+            li.dataset.id = s.ID;
+            li.className = "station" + (current && current.ID === s.ID ? " playing" : "") + (failed.has(s.ID) ? " failed" : "") + (audio.paused ? " paused" : "");
+            li.innerHTML = '<span class="id"></span><span class="st-logo"></span><div class="info"><div class="name"></div><div class="genre"></div></div><span class="eq"><i></i><i></i><i></i></span><button class="fav"></button>';
+            li.querySelector(".id").textContent = s.ID;
+            fillLogo(li.querySelector(".st-logo"), s);
+            li.querySelector(".name").textContent = s.Name;
+            li.querySelector(".genre").textContent = genreText(s);
+            const fav = li.querySelector(".fav");
+            const isFav = favorites.has(s.ID);
+            fav.innerHTML = isFav ? starSvg : starOutline;
+            fav.setAttribute("aria-pressed", isFav);
+            fav.setAttribute("aria-label", isFav ? "Favorit entfernen" : "Als Favorit merken");
+            fav.addEventListener("click", e => {
+              e.stopPropagation();
+              toggleFavorite(s);
+              renderList();
+            });
+            li.addEventListener("click", () => play(s));
+            listEl.appendChild(li);
+          }
+          countEl.textContent = visible.length + " von " + STATIONS.length + " Sendern";
+          showSong();
 }
 
 /* Wiedergabe */
 function setStatus(text, kind) {
-  nowStatus.textContent = text;
-  nowStatus.className = "status" + (kind ? " " + kind : "");
+          nowStatus.textContent = text;
+          nowStatus.className = "status" + (kind ? " " + kind : "");
 }
 function updatePlayButton() {
-  const playing = current && !audio.paused;
-  playIcon.innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
-  playBtn.setAttribute("aria-label", playing ? "Stoppen" : "Abspielen");
-  playBtn.disabled = !current;
-  document.querySelectorAll(".station").forEach(li => li.classList.toggle("paused", !playing));
+          const playing = current && !audio.paused;
+          playIcon.innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+          playBtn.setAttribute("aria-label", playing ? "Stoppen" : "Abspielen");
+          playBtn.disabled = !current;
+          document.querySelectorAll(".station").forEach(li => li.classList.toggle("paused", !playing));
 }
 function selectStation(station) {
-  current = station;
-  nowTitle.textContent = station.Name;
-  nowLogo.hidden = false;
-  fillLogo(nowLogo, station);
+          current = station;
+          nowTitle.textContent = station.Name;
+          nowLogo.hidden = false;
+          fillLogo(nowLogo, station);
 }
 /* SomaFM: mehrere Server; Safari spielt deren Shoutcast-Antwort nicht, dort zuerst über den eigenen Worker */
 function streamUrls(station) {
-  const m = station.URL.match(/^https:\/\/ice\d*\.somafm\.com(\/.*)$/);
-  if (!m) return [station.URL];
-  const direct = [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
-  if (!TITLE_SERVICE) return direct;
-  const proxied = ["ice2", "ice4"].map(h => TITLE_SERVICE + "stream?url=" + encodeURIComponent("https://" + h + ".somafm.com" + m[1]));
-  return isSafari ? [...proxied, ...direct] : [...direct, ...proxied];
+          const m = station.URL.match(/^https:\/\/ice\d*\.somafm\.com(\/.*)$/);
+          if (!m) return [station.URL];
+          const direct = [...new Set([station.URL, ...["ice1", "ice2", "ice4", "ice6", "ice5", "ice3"].map(h => "https://" + h + ".somafm.com" + m[1])])];
+          if (!TITLE_SERVICE) return direct;
+          const proxied = ["ice2", "ice4"].map(h => TITLE_SERVICE + "stream?url=" + encodeURIComponent("https://" + h + ".somafm.com" + m[1]));
+          return isSafari ? [...proxied, ...direct] : [...direct, ...proxied];
 }
 const attempt = { id: null, urls: [], i: 0, timer: 0, played: false };
 /* Abbruch während der Wiedergabe (Funkloch, WLAN-Wechsel): mit wachsender Pause neu verbinden */
@@ -1817,287 +1826,287 @@ const RECONNECT_DELAYS = [1, 2, 4, 8, 15, 30], RECONNECT_MAX = 12;
 const reconnect = { count: 0, timer: 0, watch: 0, active: false };
 function clearReconnect() { clearTimeout(reconnect.timer); clearTimeout(reconnect.watch); Object.assign(reconnect, { count: 0, active: false }); }
 function scheduleReconnect(reason) {
-  if (!current || attempt.id !== current.ID) return;
-  clearTimeout(reconnect.timer); clearTimeout(reconnect.watch);
-  if (reconnect.count >= RECONNECT_MAX) {
-    clearReconnect(); stopMeta();
-    audio.pause(); audio.removeAttribute("src"); audio.load();
-    setStatus("Verbindung verloren (" + reason + ") – ▶ zum Neuverbinden", "err");
-    updatePlayButton();
-    return;
-  }
-  const delay = RECONNECT_DELAYS[Math.min(reconnect.count, RECONNECT_DELAYS.length - 1)];
-  reconnect.count++; reconnect.active = true;
-  setStatus("Verbindung unterbrochen – neuer Versuch in " + delay + " s", "err");
-  reconnect.timer = setTimeout(reconnectNow, delay * 1000);
+          if (!current || attempt.id !== current.ID) return;
+          clearTimeout(reconnect.timer); clearTimeout(reconnect.watch);
+          if (reconnect.count >= RECONNECT_MAX) {
+            clearReconnect(); stopMeta();
+            audio.pause(); audio.removeAttribute("src"); audio.load();
+            setStatus("Verbindung verloren (" + reason + ") – ▶ zum Neuverbinden", "err");
+            updatePlayButton();
+            return;
+          }
+          const delay = RECONNECT_DELAYS[Math.min(reconnect.count, RECONNECT_DELAYS.length - 1)];
+          reconnect.count++; reconnect.active = true;
+          setStatus("Verbindung unterbrochen – neuer Versuch in " + delay + " s", "err");
+          reconnect.timer = setTimeout(reconnectNow, delay * 1000);
 }
 function reconnectNow() {
-  if (!current || attempt.id !== current.ID) return;
-  clearTimeout(reconnect.timer);
-  if (!navigator.onLine) { setStatus("Keine Internetverbindung – warte …", "err"); return; }
-  setStatus("Verbinde neu … (Versuch " + reconnect.count + ")");
-  audio.src = attempt.urls[attempt.i];
-  const result = audio.play();
-  if (result && result.catch) result.catch(() => {});
-  reconnect.watch = setTimeout(() => { if (audio.readyState < 3) scheduleReconnect("keine Antwort"); }, 15000);
+          if (!current || attempt.id !== current.ID) return;
+          clearTimeout(reconnect.timer);
+          if (!navigator.onLine) { setStatus("Keine Internetverbindung – warte …", "err"); return; }
+          setStatus("Verbinde neu … (Versuch " + reconnect.count + ")");
+          audio.src = attempt.urls[attempt.i];
+          const result = audio.play();
+          if (result && result.catch) result.catch(() => {});
+          reconnect.watch = setTimeout(() => { if (audio.readyState < 3) scheduleReconnect("keine Antwort"); }, 15000);
 }
 window.addEventListener("online", () => { if (reconnect.active) reconnectNow(); });
 window.addEventListener("offline", () => { if (attempt.played && attempt.id) setStatus("Keine Internetverbindung – warte …", "err"); });
 function tryStream() {
-  clearTimeout(attempt.timer);
-  audio.src = attempt.urls[attempt.i];
-  const result = audio.play();
-  if (result && result.catch) result.catch(err => { if (err.name !== "AbortError" && err.name !== "NotSupportedError") setStatus("Wiedergabe nicht möglich – bitte erneut tippen", "err"); });
-  attempt.timer = setTimeout(() => { if (audio.readyState < 3) streamFailed("keine Antwort"); }, 15000);
+          clearTimeout(attempt.timer);
+          audio.src = attempt.urls[attempt.i];
+          const result = audio.play();
+          if (result && result.catch) result.catch(err => { if (err.name !== "AbortError" && err.name !== "NotSupportedError") setStatus("Wiedergabe nicht möglich – bitte erneut tippen", "err"); });
+          attempt.timer = setTimeout(() => { if (audio.readyState < 3) streamFailed("keine Antwort"); }, 15000);
 }
 function streamFailed(reason) {
-  clearTimeout(attempt.timer);
-  if (!current || attempt.id !== current.ID) return;
-  if (++attempt.i < attempt.urls.length) { setStatus("Verbinde … (Server " + (attempt.i + 1) + ")"); tryStream(); return; }
-  stopMeta();
-  audio.pause(); audio.removeAttribute("src"); audio.load();
-  failed.add(current.ID);
-  setStatus("Sender nicht erreichbar (" + reason + ")", "err");
-  renderList();
-  updatePlayButton();
+          clearTimeout(attempt.timer);
+          if (!current || attempt.id !== current.ID) return;
+          if (++attempt.i < attempt.urls.length) { setStatus("Verbinde … (Server " + (attempt.i + 1) + ")"); tryStream(); return; }
+          stopMeta();
+          audio.pause(); audio.removeAttribute("src"); audio.load();
+          failed.add(current.ID);
+          setStatus("Sender nicht erreichbar (" + reason + ")", "err");
+          renderList();
+          updatePlayButton();
 }
 function play(station) {
-  if (!current || current.ID !== station.ID) stopMeta();
-  selectStation(station);
-  failed.delete(station.ID);
-  rememberLast(station);
-  setStatus("Verbinde …");
-  clearReconnect();
-  Object.assign(attempt, { id: station.ID, urls: streamUrls(station), i: 0, played: false });
-  tryStream();
-  updateMediaSession();
-  renderList();
-  updatePlayButton();
+          if (!current || current.ID !== station.ID) stopMeta();
+          selectStation(station);
+          failed.delete(station.ID);
+          rememberLast(station);
+          setStatus("Verbinde …");
+          clearReconnect();
+          Object.assign(attempt, { id: station.ID, urls: streamUrls(station), i: 0, played: false });
+          tryStream();
+          updateMediaSession();
+          renderList();
+          updatePlayButton();
 }
 function stop() {
-  clearTimeout(attempt.timer); attempt.id = null; attempt.played = false;
-  clearReconnect();
-  stopMeta();
-  audio.pause();
-  audio.removeAttribute("src");
-  audio.load();
-  setStatus("Gestoppt");
-  updatePlayButton();
+          clearTimeout(attempt.timer); attempt.id = null; attempt.played = false;
+          clearReconnect();
+          stopMeta();
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.load();
+          setStatus("Gestoppt");
+          updatePlayButton();
 }
 audio.addEventListener("playing", () => {
-  clearTimeout(attempt.timer);
-  attempt.played = true;
-  clearReconnect();
-  if (current && attempt.id === current.ID && !attempt.urls[attempt.i].startsWith(TITLE_SERVICE || "-")) current.URL = attempt.urls[attempt.i];
-  showSong(); updatePlayButton();
-  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-  if (meta.station !== current.ID) startMeta();
+          clearTimeout(attempt.timer);
+          attempt.played = true;
+          clearReconnect();
+          if (current && attempt.id === current.ID && !attempt.urls[attempt.i].startsWith(TITLE_SERVICE || "-")) current.URL = attempt.urls[attempt.i];
+          showSong(); updatePlayButton();
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+          if (meta.station !== current.ID) startMeta();
 });
 audio.addEventListener("waiting", () => {
-  if (reconnect.active) return;
-  setStatus("Puffert …");
-  if (attempt.played) { clearTimeout(reconnect.watch); reconnect.watch = setTimeout(() => { if (audio.readyState < 3) scheduleReconnect("Stream hängt"); }, 10000); }
+          if (reconnect.active) return;
+          setStatus("Puffert …");
+          if (attempt.played) { clearTimeout(reconnect.watch); reconnect.watch = setTimeout(() => { if (audio.readyState < 3) scheduleReconnect("Stream hängt"); }, 10000); }
 });
 audio.addEventListener("ended", () => { if (attempt.played) scheduleReconnect("Stream beendet"); });
 audio.addEventListener("pause", () => { updatePlayButton(); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; });
 const MEDIA_ERRORS = { 1: "abgebrochen", 2: "Netzwerkfehler", 3: "Format nicht lesbar", 4: "Adresse/Format nicht unterstützt" };
 audio.addEventListener("error", () => {
-  if (!current || !audio.getAttribute("src")) return;
-  const reason = MEDIA_ERRORS[audio.error && audio.error.code] || "Fehler";
-  if (attempt.played) scheduleReconnect(reason); else streamFailed(reason);
+          if (!current || !audio.getAttribute("src")) return;
+          const reason = MEDIA_ERRORS[audio.error && audio.error.code] || "Fehler";
+          if (attempt.played) scheduleReconnect(reason); else streamFailed(reason);
 });
 
 playBtn.addEventListener("click", () => {
-  if (!current) return;
-  if (audio.paused) play(current); else stop();
+          if (!current) return;
+          if (audio.paused) play(current); else stop();
 });
 $("randomBtn").addEventListener("click", () => {
-  const pool = visible.length ? visible : STATIONS;
-  if (pool.length) play(pool[Math.floor(Math.random() * pool.length)]);
+          const pool = visible.length ? visible : STATIONS;
+          if (pool.length) play(pool[Math.floor(Math.random() * pool.length)]);
 });
 function step(dir) {
-  const pool = visible.length ? visible : STATIONS;
-  if (!pool.length) return;
-  const i = current ? pool.findIndex(s => s.ID === current.ID) : -1;
-  play(pool[(i + dir + pool.length) % pool.length]);
+          const pool = visible.length ? visible : STATIONS;
+          if (!pool.length) return;
+          const i = current ? pool.findIndex(s => s.ID === current.ID) : -1;
+          play(pool[(i + dir + pool.length) % pool.length]);
 }
 
 /* Aktueller Titel: Sender-API (laut.fm, SomaFM), Icecast-Status oder ICY-Daten im Stream */
 function splitTitle(text) {
-  text = String(text || "").replace(/\0+$/, "").trim();
-  if (!text || /^[-–\s]*$/.test(text)) return null;
-  const i = text.indexOf(" - ");
-  return i > 0 ? { artist: text.slice(0, i).trim(), title: text.slice(i + 3).trim() } : { artist: "", title: text };
+          text = String(text || "").replace(/\0+$/, "").trim();
+          if (!text || /^[-–\s]*$/.test(text)) return null;
+          const i = text.indexOf(" - ");
+          return i > 0 ? { artist: text.slice(0, i).trim(), title: text.slice(i + 3).trim() } : { artist: "", title: text };
 }
 const GENERIC_WORDS = new Set(["radio", "the", "fm", "web", "stream", "live", "digital", "online", "channel", "hits", "und", "die", "der", "das"]);
 const normalizeText = s => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").trim();
 /* Kennwort eines Senders: erstes markantes Wort ("Radio Zwickau 90er" → "zwickau") */
 function stationKey(name) {
-  const words = normalizeText(name).split(" ").filter(Boolean);
-  return words.find(w => w.length >= 4 && !GENERIC_WORDS.has(w)) || words.join("");
+          const words = normalizeText(name).split(" ").filter(Boolean);
+          return words.find(w => w.length >= 4 && !GENERIC_WORDS.has(w)) || words.join("");
 }
 /* Senderinfo, Werbung oder Jingle statt Interpret/Titel wird nicht angezeigt */
 function cleanSong(song, station) {
-  if (!song || !song.title) return null;
-  const text = (song.artist ? song.artist + " - " : "") + song.title, plain = normalizeText(text), key = stationKey(station.Name);
-  if (/https?:|www\.|\.(de|com|fm|net)\b/i.test(text) || /\b(werbung|nachrichten|verkehrsservice|jetzt einschalten)\b/i.test(text)) return null;
-  if (key.length >= 3 && (" " + plain + " ").includes(" " + key + " ")) return null;
-  return song;
+          if (!song || !song.title) return null;
+          const text = (song.artist ? song.artist + " - " : "") + song.title, plain = normalizeText(text), key = stationKey(station.Name);
+          if (/https?:|www\.|\.(de|com|fm|net)\b/i.test(text) || /\b(werbung|nachrichten|verkehrsservice|jetzt einschalten)\b/i.test(text)) return null;
+          if (key.length >= 3 && (" " + plain + " ").includes(" " + key + " ")) return null;
+          return song;
 }
 function decodeMeta(bytes) {
-  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return new TextDecoder("windows-1252").decode(bytes); }
+          try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return new TextDecoder("windows-1252").decode(bytes); }
 }
 /* Liest aus dem Stream bis zum ersten Metadatenblock und bricht dann ab (wenige KB statt Dauer-Download) */
 async function readIcyTitle(reader, metaint) {
-  let skip = metaint, need = -1, got = 0, total = 0, block = null;
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) throw new Error("Stream-Ende");
-    if ((total += value.length) > 4 * metaint + 65536) throw new Error("Keine Metadaten");
-    let i = 0;
-    while (i < value.length) {
-      if (skip > 0) { const n = Math.min(skip, value.length - i); skip -= n; i += n; continue; }
-      if (need < 0) {
-        need = value[i++] * 16;
-        if (need === 0) { need = -1; skip = metaint; }
-        else { block = new Uint8Array(need); got = 0; }
-        continue;
-      }
-      const n = Math.min(need - got, value.length - i);
-      block.set(value.subarray(i, i + n), got); got += n; i += n;
-      if (got === need) {
-        const m = decodeMeta(block).match(/StreamTitle='([\s\S]*?)';/);
-        return m ? splitTitle(m[1]) : null;
-      }
-    }
-  }
+          let skip = metaint, need = -1, got = 0, total = 0, block = null;
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) throw new Error("Stream-Ende");
+            if ((total += value.length) > 4 * metaint + 65536) throw new Error("Keine Metadaten");
+            let i = 0;
+            while (i < value.length) {
+              if (skip > 0) { const n = Math.min(skip, value.length - i); skip -= n; i += n; continue; }
+              if (need < 0) {
+                need = value[i++] * 16;
+                if (need === 0) { need = -1; skip = metaint; }
+                else { block = new Uint8Array(need); got = 0; }
+                continue;
+              }
+              const n = Math.min(need - got, value.length - i);
+              block.set(value.subarray(i, i + n), got); got += n; i += n;
+              if (got === need) {
+                const m = decodeMeta(block).match(/StreamTitle='([\s\S]*?)';/);
+                return m ? splitTitle(m[1]) : null;
+              }
+            }
+          }
 }
 const named = (label, fn, wait = 12000) => Object.assign(fn, { label, wait });
 const metaProviders = s => {
-  const u = new URL(s.URL), list = [], soma = somaChannel(s.URL);
-  if (TITLE_SERVICE) list.push(named("Titel-Dienst", async signal => {
-    const r = await fetch(TITLE_SERVICE + "?url=" + encodeURIComponent(s.URL) + "&name=" + encodeURIComponent(s.Name) + "&wait=18", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    if (j.error) throw new Error(j.error);
-    return j.title ? { title: String(j.title).trim(), artist: String(j.artist || "").trim() } : null;
-  }, 22000));
-  if (u.hostname === "stream.laut.fm") list.push(named("laut.fm", async signal => {
-    const r = await fetch("https://api.laut.fm/station/" + u.pathname.slice(1) + "/current_song", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    return j && j.title ? { title: String(j.title).trim(), artist: j.artist && j.artist.name ? String(j.artist.name).trim() : "" } : null;
-  }));
-  if (soma) list.push(named("SomaFM", async signal => {
-    const r = await fetch("https://api.somafm.com/songs/" + soma + ".json", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    const song = ((await r.json()).songs || [])[0];
-    return song && song.title ? { title: String(song.title).trim(), artist: String(song.artist || "").trim() } : null;
-  }));
-  list.push(named("Icecast-Status", async signal => {
-    const r = await fetch(u.origin + "/status-json.xsl", { signal, cache: "no-store" });
-    if (!r.ok) throw new Error(r.status);
-    let src = ((await r.json()).icestats || {}).source;
-    src = [].concat(src || []).find(x => x.listenurl && new URL(x.listenurl).pathname === u.pathname);
-    if (!src) throw new Error("Mount fehlt");
-    if (src.artist && src.title) return { artist: String(src.artist).trim(), title: String(src.title).trim() };
-    return splitTitle(src.title || src.yp_currently_playing);
-  }));
-  list.push(named("Stream (ICY)", async signal => {
-    const r = await fetch(s.URL, { signal, cache: "no-store", headers: { "Icy-MetaData": "1" } });
-    const metaint = parseInt(r.headers.get("icy-metaint"), 10);
-    if (!r.ok || !r.body || !(metaint > 0)) { if (r.body) r.body.cancel().catch(() => {}); throw new Error("Kein ICY"); }
-    const reader = r.body.getReader();
-    try { return await readIcyTitle(reader, metaint); } finally { reader.cancel().catch(() => {}); }
-  }));
-  return list;
+          const u = new URL(s.URL), list = [], soma = somaChannel(s.URL);
+          if (TITLE_SERVICE) list.push(named("Titel-Dienst", async signal => {
+            const r = await fetch(TITLE_SERVICE + "?url=" + encodeURIComponent(s.URL) + "&name=" + encodeURIComponent(s.Name) + "&wait=18", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            const j = await r.json();
+            if (j.error) throw new Error(j.error);
+            return j.title ? { title: String(j.title).trim(), artist: String(j.artist || "").trim() } : null;
+          }, 22000));
+          if (u.hostname === "stream.laut.fm") list.push(named("laut.fm", async signal => {
+            const r = await fetch("https://api.laut.fm/station/" + u.pathname.slice(1) + "/current_song", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            const j = await r.json();
+            return j && j.title ? { title: String(j.title).trim(), artist: j.artist && j.artist.name ? String(j.artist.name).trim() : "" } : null;
+          }));
+          if (soma) list.push(named("SomaFM", async signal => {
+            const r = await fetch("https://api.somafm.com/songs/" + soma + ".json", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            const song = ((await r.json()).songs || [])[0];
+            return song && song.title ? { title: String(song.title).trim(), artist: String(song.artist || "").trim() } : null;
+          }));
+          list.push(named("Icecast-Status", async signal => {
+            const r = await fetch(u.origin + "/status-json.xsl", { signal, cache: "no-store" });
+            if (!r.ok) throw new Error(r.status);
+            let src = ((await r.json()).icestats || {}).source;
+            src = [].concat(src || []).find(x => x.listenurl && new URL(x.listenurl).pathname === u.pathname);
+            if (!src) throw new Error("Mount fehlt");
+            if (src.artist && src.title) return { artist: String(src.artist).trim(), title: String(src.title).trim() };
+            return splitTitle(src.title || src.yp_currently_playing);
+          }));
+          list.push(named("Stream (ICY)", async signal => {
+            const r = await fetch(s.URL, { signal, cache: "no-store", headers: { "Icy-MetaData": "1" } });
+            const metaint = parseInt(r.headers.get("icy-metaint"), 10);
+            if (!r.ok || !r.body || !(metaint > 0)) { if (r.body) r.body.cancel().catch(() => {}); throw new Error("Kein ICY"); }
+            const reader = r.body.getReader();
+            try { return await readIcyTitle(reader, metaint); } finally { reader.cancel().catch(() => {}); }
+          }));
+          return list;
 };
 const meta = { gen: 0, station: null, timer: 0, ctrl: null, song: null, info: new Map() };
 function stopMeta() {
-  meta.gen++; meta.station = null; meta.song = null;
-  clearTimeout(meta.timer);
-  if (meta.ctrl) meta.ctrl.abort();
-  document.title = APP_NAME;
+          meta.gen++; meta.station = null; meta.song = null;
+          clearTimeout(meta.timer);
+          if (meta.ctrl) meta.ctrl.abort();
+          document.title = APP_NAME;
 }
 function startMeta() {
-  stopMeta();
-  const gen = meta.gen, st = current, providers = metaProviders(st);
-  meta.station = st.ID;
-  if (!meta.info.has(st.ID)) meta.info.set(st.ID, { good: -1, fails: 0, dead: new Set() });
-  const info = meta.info.get(st.ID);
-  info.labels = providers.map(p => p.label);
-  const run = async () => {
-    const order = info.good >= 0 ? [info.good] : providers.map((_, i) => i).filter(i => !info.dead.has(i));
-    if (!order.length) return;
-    for (const i of order) {
-      const ctrl = meta.ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), providers[i].wait);
-      try {
-        const song = cleanSong(await providers[i](ctrl.signal), st);
-        if (gen !== meta.gen) return;
-        info.good = i; info.fails = 0;
-        setSong(song);
-        break;
-      } catch {
-        if (gen !== meta.gen) return;
-        if (info.good === i) { if (++info.fails >= 3) { info.good = -1; info.dead.clear(); } }
-        else info.dead.add(i);
-      } finally { clearTimeout(t); }
-    }
-    if (gen === meta.gen && (info.good >= 0 || info.dead.size < providers.length)) meta.timer = setTimeout(run, 25000);
-    showMetaDiag();
-  };
-  run();
+          stopMeta();
+          const gen = meta.gen, st = current, providers = metaProviders(st);
+          meta.station = st.ID;
+          if (!meta.info.has(st.ID)) meta.info.set(st.ID, { good: -1, fails: 0, dead: new Set() });
+          const info = meta.info.get(st.ID);
+          info.labels = providers.map(p => p.label);
+          const run = async () => {
+            const order = info.good >= 0 ? [info.good] : providers.map((_, i) => i).filter(i => !info.dead.has(i));
+            if (!order.length) return;
+            for (const i of order) {
+              const ctrl = meta.ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), providers[i].wait);
+              try {
+                const song = cleanSong(await providers[i](ctrl.signal), st);
+                if (gen !== meta.gen) return;
+                info.good = i; info.fails = 0;
+                setSong(song);
+                break;
+              } catch {
+                if (gen !== meta.gen) return;
+                if (info.good === i) { if (++info.fails >= 3) { info.good = -1; info.dead.clear(); } }
+                else info.dead.add(i);
+              } finally { clearTimeout(t); }
+            }
+            if (gen === meta.gen && (info.good >= 0 || info.dead.size < providers.length)) meta.timer = setTimeout(run, 25000);
+            showMetaDiag();
+          };
+          run();
 }
 function showMetaDiag() {
-  const el = $("metaDiag"), info = current && meta.info.get(current.ID);
-  if (!info || !info.labels) { el.textContent = "Titelquelle: erst einen Sender abspielen."; return; }
-  if (info.good >= 0) el.textContent = "Titelquelle für " + current.Name + ": " + info.labels[info.good] + ".";
-  else if (info.dead.size >= info.labels.length) el.textContent = current.Name + " liefert keine Titel (geprüft: " + info.labels.join(", ") + ")." + (TITLE_SERVICE ? "" : " Kein Titel-Dienst eingerichtet.");
-  else el.textContent = "Titelquelle für " + current.Name + " wird gesucht …";
+          const el = $("metaDiag"), info = current && meta.info.get(current.ID);
+          if (!info || !info.labels) { el.textContent = "Titelquelle: erst einen Sender abspielen."; return; }
+          if (info.good >= 0) el.textContent = "Titelquelle für " + current.Name + ": " + info.labels[info.good] + ".";
+          else if (info.dead.size >= info.labels.length) el.textContent = current.Name + " liefert keine Titel (geprüft: " + info.labels.join(", ") + ")." + (TITLE_SERVICE ? "" : " Kein Titel-Dienst eingerichtet.");
+          else el.textContent = "Titelquelle für " + current.Name + " wird gesucht …";
 }
 const songText = song => song.title + (song.artist ? " – " + song.artist : "");
 function setSong(song) {
-  const old = meta.song ? songText(meta.song) : "", now = song ? songText(song) : "";
-  meta.song = song;
-  if (old === now) return;
-  if (song && current) addHistory(song, current);
-  showSong();
-  updateMediaSession();
+          const old = meta.song ? songText(meta.song) : "", now = song ? songText(song) : "";
+          meta.song = song;
+          if (old === now) return;
+          if (song && current) addHistory(song, current);
+          showSong();
+          updateMediaSession();
 }
 function showSong() {
-  const song = current && !audio.paused && meta.station === current.ID ? meta.song : null;
-  if (current && !audio.paused && audio.readyState > 2) {
-    if (song) { nowStatus.className = "status ok"; nowStatus.textContent = "Läuft: "; const b = document.createElement("b"); b.textContent = songText(song); nowStatus.appendChild(b); }
-    else setStatus("Läuft", "ok");
-  }
-  document.querySelectorAll(".station .genre.song").forEach(el => {
-    const s = STATIONS.find(x => x.ID === el.closest(".station").dataset.id);
-    el.classList.remove("song"); el.textContent = s ? genreText(s) : "";
-  });
-  if (song) {
-    const li = listEl.querySelector('.station[data-id="' + CSS.escape(current.ID) + '"] .genre');
-    if (li) { li.classList.add("song"); li.textContent = "♪ " + songText(song); }
-  }
-  document.title = song ? songText(song) + " · Jukebox" : APP_NAME;
+          const song = current && !audio.paused && meta.station === current.ID ? meta.song : null;
+          if (current && !audio.paused && audio.readyState > 2) {
+            if (song) { nowStatus.className = "status ok"; nowStatus.textContent = "Läuft: "; const b = document.createElement("b"); b.textContent = songText(song); nowStatus.appendChild(b); }
+            else setStatus("Läuft", "ok");
+          }
+          document.querySelectorAll(".station .genre.song").forEach(el => {
+            const s = STATIONS.find(x => x.ID === el.closest(".station").dataset.id);
+            el.classList.remove("song"); el.textContent = s ? genreText(s) : "";
+          });
+          if (song) {
+            const li = listEl.querySelector('.station[data-id="' + CSS.escape(current.ID) + '"] .genre');
+            if (li) { li.classList.add("song"); li.textContent = "♪ " + songText(song); }
+          }
+          document.title = song ? songText(song) + " · Jukebox" : APP_NAME;
 }
 
 /* Sperrbildschirm / Benachrichtigung */
 const APP_ART = [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }, { src: "icon-512.png", sizes: "512x512", type: "image/png" }];
 function updateMediaSession() {
-  if (!("mediaSession" in navigator) || !current) return;
-  const song = meta.station === current.ID ? meta.song : null;
-  const artwork = logoOk.get(current.ID) === true ? [{ src: logoUrl(current), sizes: "256x256" }] : APP_ART;
-  navigator.mediaSession.metadata = new MediaMetadata(song
-    ? { title: song.title, artist: song.artist || current.Name, album: current.Name, artwork }
-    : { title: current.Name, artist: APP_NAME, album: current.Genre, artwork });
+          if (!("mediaSession" in navigator) || !current) return;
+          const song = meta.station === current.ID ? meta.song : null;
+          const artwork = logoOk.get(current.ID) === true ? [{ src: logoUrl(current), sizes: "256x256" }] : APP_ART;
+          navigator.mediaSession.metadata = new MediaMetadata(song
+            ? { title: song.title, artist: song.artist || current.Name, album: current.Name, artwork }
+            : { title: current.Name, artist: APP_NAME, album: current.Genre, artwork });
 }
 if ("mediaSession" in navigator) {
-  const set = (a, h) => { try { navigator.mediaSession.setActionHandler(a, h); } catch {} };
-  set("play", () => current && play(current));
-  set("pause", stop);
-  set("stop", stop);
-  set("nexttrack", () => step(1));
-  set("previoustrack", () => step(-1));
+          const set = (a, h) => { try { navigator.mediaSession.setActionHandler(a, h); } catch {} };
+          set("play", () => current && play(current));
+          set("pause", stop);
+          set("stop", stop);
+          set("nexttrack", () => step(1));
+          set("previoustrack", () => step(-1));
 }
 
 /* Lautstärke: iOS lässt Webseiten die Lautstärke nicht ändern – dort Hinweis statt Regler */
@@ -2106,27 +2115,27 @@ const isSafari = isIOS || (/Safari\//.test(navigator.userAgent) && !/Chrome|Chro
 const touchDevice = window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(any-pointer: fine)").matches;
 const volumeLocked = isIOS || touchDevice || (() => { const a = new Audio(); a.volume = 0.5; return a.volume !== 0.5; })();
 if (volumeLocked) {
-  document.querySelector(".player").classList.add("no-volume");
-  $("volumeHint").hidden = false;
+          document.querySelector(".player").classList.add("no-volume");
+          $("volumeHint").hidden = false;
 } else {
-  const setVolume = v => { audio.volume = v / 100; volumeValue.textContent = v + " %"; volumeEl.value = v; };
-  volumeEl.addEventListener("input", () => { setVolume(+volumeEl.value); STORE.set("volume", +volumeEl.value); });
-  setVolume(STORE.get("volume", 80));
+          const setVolume = v => { audio.volume = v / 100; volumeValue.textContent = v + " %"; volumeEl.value = v; };
+          volumeEl.addEventListener("input", () => { setVolume(+volumeEl.value); STORE.set("volume", +volumeEl.value); });
+          setVolume(STORE.get("volume", 80));
 }
 
 /* AirPlay/Bluetooth-Ausgabe (Safari auf iPhone, iPad und Mac): Knopf oben neben dem Zahnrad, immer sichtbar */
 if (window.WebKitPlaybackTargetAvailabilityEvent) {
-  const airBtn = $("airplayBtn");
-  airBtn.hidden = false;
-  audio.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", () => airBtn.classList.toggle("active", !!audio.webkitCurrentPlaybackTargetIsWireless));
-  airBtn.addEventListener("click", () => { try { audio.webkitShowPlaybackTargetPicker(); } catch {} });
+          const airBtn = $("airplayBtn");
+          airBtn.hidden = false;
+          audio.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", () => airBtn.classList.toggle("active", !!audio.webkitCurrentPlaybackTargetIsWireless));
+          airBtn.addEventListener("click", () => { try { audio.webkitShowPlaybackTargetPicker(); } catch {} });
 }
 
 /* Einstellungen */
 const sheet = $("sheet"), backdrop = $("backdrop"), historySheet = $("historySheet");
 function openSheet(el) {
-  for (const x of [sheet, historySheet]) x.classList.toggle("open", x === el);
-  backdrop.classList.toggle("open", !!el);
+          for (const x of [sheet, historySheet]) x.classList.toggle("open", x === el);
+          backdrop.classList.toggle("open", !!el);
 }
 const toggleSheet = open => openSheet(open ? sheet : null);
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => openSheet(null)));
@@ -2137,28 +2146,28 @@ $("closeX").addEventListener("click", () => toggleSheet(false));
 /* Mobile App: Link kopieren/teilen, eigenes System hervorheben, installierte App erkennen */
 const APP_URL = $("appLink").href;
 function copyFallback(text) {
-  const ta = document.createElement("textarea");
-  ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
-  document.body.appendChild(ta); ta.select();
-  try { return document.execCommand("copy"); } catch { return false; } finally { ta.remove(); }
+          const ta = document.createElement("textarea");
+          ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          try { return document.execCommand("copy"); } catch { return false; } finally { ta.remove(); }
 }
 $("copyLink").addEventListener("click", async () => {
-  let ok = false;
-  try { await navigator.clipboard.writeText(APP_URL); ok = true; } catch { ok = copyFallback(APP_URL); }
-  const st = $("copyStatus");
-  st.textContent = ok ? "Link kopiert." : "Kopieren nicht möglich – Link lange antippen.";
-  st.classList.toggle("err", !ok);
-  setTimeout(() => { st.textContent = ""; }, 2500);
+          let ok = false;
+          try { await navigator.clipboard.writeText(APP_URL); ok = true; } catch { ok = copyFallback(APP_URL); }
+          const st = $("copyStatus");
+          st.textContent = ok ? "Link kopiert." : "Kopieren nicht möglich – Link lange antippen.";
+          st.classList.toggle("err", !ok);
+          setTimeout(() => { st.textContent = ""; }, 2500);
 });
 if (navigator.share) {
-  $("shareLink").hidden = false;
-  $("shareLink").addEventListener("click", () => navigator.share({ title: APP_NAME, url: APP_URL }).catch(() => {}));
+          $("shareLink").hidden = false;
+          $("shareLink").addEventListener("click", () => navigator.share({ title: APP_NAME, url: APP_URL }).catch(() => {}));
 }
 (() => {
-  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  if (standalone) { $("appInstalled").hidden = false; $("appIntro").textContent = "Teile die App mit Kollegen: QR-Code zeigen oder Link schicken."; }
-  if (isIOS) $("osIphone").classList.add("here");
-  else if (/Android/i.test(navigator.userAgent)) $("osAndroid").classList.add("here");
+          const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+          if (standalone) { $("appInstalled").hidden = false; $("appIntro").textContent = "Teile die App mit Kollegen: QR-Code zeigen oder Link schicken."; }
+          if (isIOS) $("osIphone").classList.add("here");
+          else if (/Android/i.test(navigator.userAgent)) $("osAndroid").classList.add("here");
 })();
 document.addEventListener("keydown", e => { if (e.key === "Escape" && backdrop.classList.contains("open")) openSheet(null); });
 
@@ -2167,66 +2176,66 @@ const genreText = s => s.Own ? s.Genre + " · Eigener Sender" : s.Genre;
 const ownStations = () => [].concat(STORE.get("own", []) || []).filter(s => s && s.ID && s.Name && s.URL);
 const nextOwnId = () => String([...ownStations(), ...BASE_STATIONS].reduce((max, s) => Math.max(max, parseInt(s.ID, 10) || 0), 1000) + 1);
 /* Eigene Sender bleiben getrennt von radiostation.json. Kollidiert eine ID mit der Liste, bekommt der eigene
-   Sender eine freie ID; steht dieselbe Adresse inzwischen in der Liste, wird nur der Listen-Eintrag gezeigt */
+           Sender eine freie ID; steht dieselbe Adresse inzwischen in der Liste, wird nur der Listen-Eintrag gezeigt */
 function buildStations() {
-  const baseIds = new Set(BASE_STATIONS.map(s => s.ID)), baseKeys = new Set(BASE_STATIONS.map(s => s.Key));
-  let own = ownStations(), changed = false;
-  for (const o of own) {
-    if (baseIds.has(String(o.ID)) || own.filter(x => String(x.ID) === String(o.ID)).length > 1) {
-      const used = [...baseIds, ...own.map(x => String(x.ID))].map(Number).filter(n => !isNaN(n));
-      o.ID = String(Math.max(1000, ...used) + 1); changed = true;
-    }
-  }
-  if (changed) STORE.set("own", own);
-  own = own.filter(o => !baseKeys.has(normalizeUrl(String(o.URL))));
-  STATIONS = normalizeStations([...BASE_STATIONS, ...own.map(s => ({ ...s, Own: true }))]);
-  if (current) current = STATIONS.find(s => s.Key === current.Key) || STATIONS.find(s => sameName(s.Name, current.Name)) || current;
-  resolveFavorites();
+          const baseIds = new Set(BASE_STATIONS.map(s => s.ID)), baseKeys = new Set(BASE_STATIONS.map(s => s.Key));
+          let own = ownStations(), changed = false;
+          for (const o of own) {
+            if (baseIds.has(String(o.ID)) || own.filter(x => String(x.ID) === String(o.ID)).length > 1) {
+              const used = [...baseIds, ...own.map(x => String(x.ID))].map(Number).filter(n => !isNaN(n));
+              o.ID = String(Math.max(1000, ...used) + 1); changed = true;
+            }
+          }
+          if (changed) STORE.set("own", own);
+          own = own.filter(o => !baseKeys.has(normalizeUrl(String(o.URL))));
+          STATIONS = normalizeStations([...BASE_STATIONS, ...own.map(s => ({ ...s, Own: true }))]);
+          if (current) current = STATIONS.find(s => s.Key === current.Key) || STATIONS.find(s => sameName(s.Name, current.Name)) || current;
+          resolveFavorites();
 }
 function refreshStations() {
-  buildStations(); setVersion(); renderChips(); renderList(); renderOwn(); renderGenreTips();
+          buildStations(); setVersion(); renderChips(); renderList(); renderOwn(); renderGenreTips();
 }
 function setAddStatus(text, kind) { const el = $("addStatus"); el.textContent = text; el.className = "add-status" + (kind ? " " + kind : ""); }
 function renderGenreTips() {
-  const box = $("genreTips"); box.replaceChildren();
-  for (const g of [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"))) {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = g;
-    b.addEventListener("click", () => { $("newGenre").value = g; });
-    box.appendChild(b);
-  }
+          const box = $("genreTips"); box.replaceChildren();
+          for (const g of [...new Set(STATIONS.map(s => s.Genre))].sort((a, b) => a.localeCompare(b, "de"))) {
+            const b = document.createElement("button"); b.type = "button"; b.textContent = g;
+            b.addEventListener("click", () => { $("newGenre").value = g; });
+            box.appendChild(b);
+          }
 }
 function renderOwn() {
-  const own = STATIONS.filter(s => s.Own), rows = $("ownRows");
-  $("ownList").hidden = own.length === 0;
-  rows.replaceChildren();
-  for (const s of own) {
-    const row = document.createElement("div");
-    row.className = "own-row";
-    row.innerHTML = '<span class="st-logo"></span><div class="info"><div class="name"></div><div class="url"></div></div><button class="del" type="button" aria-label="Sender löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
-    fillLogo(row.querySelector(".st-logo"), s);
-    row.querySelector(".name").textContent = s.ID + " · " + s.Name;
-    row.querySelector(".url").textContent = s.URL;
-    row.querySelector(".del").addEventListener("click", () => {
-      if (!confirm("„" + s.Name + "“ löschen?")) return;
-      STORE.set("own", ownStations().filter(o => String(o.ID) !== s.ID));
-      if (favorites.has(s.ID)) toggleFavorite(s);
-      refreshStations(); prepareAddForm();
-      setAddStatus("„" + s.Name + "“ wurde gelöscht.");
-    });
-    rows.appendChild(row);
-  }
+          const own = STATIONS.filter(s => s.Own), rows = $("ownRows");
+          $("ownList").hidden = own.length === 0;
+          rows.replaceChildren();
+          for (const s of own) {
+            const row = document.createElement("div");
+            row.className = "own-row";
+            row.innerHTML = '<span class="st-logo"></span><div class="info"><div class="name"></div><div class="url"></div></div><button class="del" type="button" aria-label="Sender löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
+            fillLogo(row.querySelector(".st-logo"), s);
+            row.querySelector(".name").textContent = s.ID + " · " + s.Name;
+            row.querySelector(".url").textContent = s.URL;
+            row.querySelector(".del").addEventListener("click", () => {
+              if (!confirm("„" + s.Name + "“ löschen?")) return;
+              STORE.set("own", ownStations().filter(o => String(o.ID) !== s.ID));
+              if (favorites.has(s.ID)) toggleFavorite(s);
+              refreshStations(); prepareAddForm();
+              setAddStatus("„" + s.Name + "“ wurde gelöscht.");
+            });
+            rows.appendChild(row);
+          }
 }
 function prepareAddForm() { $("newId").value = nextOwnId(); renderGenreTips(); renderOwn(); }
 $("saveStation").addEventListener("click", () => {
-  const name = $("newName").value.trim(), genre = $("newGenre").value.trim(), url = $("newUrl").value.trim();
-  if (!name || !url) { setAddStatus("Bitte Name und URL ausfüllen.", "err"); return; }
-  if (!/^https?:\/\/\S+$/i.test(url)) { setAddStatus("Die URL muss mit http:// oder https:// beginnen.", "err"); return; }
-  if (STATIONS.some(s => s.URL === normalizeUrl(url))) { setAddStatus("Dieser Sender (URL) ist bereits vorhanden.", "warn"); return; }
-  const entry = { ID: nextOwnId(), Name: name, Genre: genre || "Sonstiges", URL: url };
-  STORE.set("own", [...ownStations(), entry]);
-  refreshStations();
-  $("newName").value = ""; $("newGenre").value = ""; $("newUrl").value = ""; $("newId").value = nextOwnId();
-  setAddStatus("„" + name + "“ wurde gespeichert (ID " + entry.ID + ")." + (/^http:/i.test(url) ? " Hinweis: wird über https abgespielt." : ""), "ok");
+          const name = $("newName").value.trim(), genre = $("newGenre").value.trim(), url = $("newUrl").value.trim();
+          if (!name || !url) { setAddStatus("Bitte Name und URL ausfüllen.", "err"); return; }
+          if (!/^https?:\/\/\S+$/i.test(url)) { setAddStatus("Die URL muss mit http:// oder https:// beginnen.", "err"); return; }
+          if (STATIONS.some(s => s.URL === normalizeUrl(url))) { setAddStatus("Dieser Sender (URL) ist bereits vorhanden.", "warn"); return; }
+          const entry = { ID: nextOwnId(), Name: name, Genre: genre || "Sonstiges", URL: url };
+          STORE.set("own", [...ownStations(), entry]);
+          refreshStations();
+          $("newName").value = ""; $("newGenre").value = ""; $("newUrl").value = ""; $("newId").value = nextOwnId();
+          setAddStatus("„" + name + "“ wurde gespeichert (ID " + entry.ID + ")." + (/^http:/i.test(url) ? " Hinweis: wird über https abgespielt." : ""), "ok");
 });
 $("newUrl").addEventListener("keydown", e => { if (e.key === "Enter") $("saveStation").click(); });
 
@@ -2234,32 +2243,32 @@ $("newUrl").addEventListener("keydown", e => { if (e.key === "Enter") $("saveSta
 const HISTORY_MAX = 30;
 const getHistory = () => [].concat(STORE.get("history", []) || []).filter(h => h && h.title);
 function addHistory(song, station) {
-  const list = getHistory();
-  if (list[0] && list[0].title === song.title && list[0].artist === song.artist) return;
-  list.unshift({ title: song.title, artist: song.artist || "", station: station.Name, time: Date.now() });
-  STORE.set("history", list.slice(0, HISTORY_MAX));
-  if (historySheet.classList.contains("open")) renderHistory();
+          const list = getHistory();
+          if (list[0] && list[0].title === song.title && list[0].artist === song.artist) return;
+          list.unshift({ title: song.title, artist: song.artist || "", station: station.Name, time: Date.now() });
+          STORE.set("history", list.slice(0, HISTORY_MAX));
+          if (historySheet.classList.contains("open")) renderHistory();
 }
 const SPOTIFY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.6 14.4a.6.6 0 0 1-.9.2c-2.4-1.5-5.4-1.8-9-1a.6.6 0 1 1-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.3.9zm1.2-2.7a.8.8 0 0 1-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 1 1-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.2.5.7.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a.9.9 0 1 1-.5-1.8c3.6-1.1 9.4-.9 13.1 1.3a.9.9 0 0 1-1 1.7z"/></svg>';
 const YOUTUBE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8zM9.8 15.1V8.9l5.8 3.1-5.8 3.1z"/></svg>';
 function renderHistory() {
-  const list = getHistory(), ul = $("histList");
-  ul.replaceChildren();
-  $("histEmpty").hidden = list.length > 0;
-  $("histClear").hidden = list.length === 0;
-  for (const h of list) {
-    const q = encodeURIComponent((h.artist ? h.artist + " " : "") + h.title);
-    const li = document.createElement("li");
-    li.innerHTML = '<div class="info"><div class="t"></div><div class="a"></div><div class="m"></div></div>' +
-      '<a class="sp" target="_blank" rel="noopener" aria-label="Bei Spotify suchen">' + SPOTIFY_ICON + '</a>' +
-      '<a class="yt" target="_blank" rel="noopener" aria-label="Bei YouTube suchen">' + YOUTUBE_ICON + '</a>';
-    li.querySelector(".t").textContent = h.title;
-    li.querySelector(".a").textContent = h.artist;
-    li.querySelector(".m").textContent = h.station + " · " + new Date(h.time).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit" }) + " Uhr";
-    li.querySelector(".sp").href = "https://open.spotify.com/search/" + q;
-    li.querySelector(".yt").href = "https://www.youtube.com/results?search_query=" + q;
-    ul.appendChild(li);
-  }
+          const list = getHistory(), ul = $("histList");
+          ul.replaceChildren();
+          $("histEmpty").hidden = list.length > 0;
+          $("histClear").hidden = list.length === 0;
+          for (const h of list) {
+            const q = encodeURIComponent((h.artist ? h.artist + " " : "") + h.title);
+            const li = document.createElement("li");
+            li.innerHTML = '<div class="info"><div class="t"></div><div class="a"></div><div class="m"></div></div>' +
+              '<a class="sp" target="_blank" rel="noopener" aria-label="Bei Spotify suchen">' + SPOTIFY_ICON + '</a>' +
+              '<a class="yt" target="_blank" rel="noopener" aria-label="Bei YouTube suchen">' + YOUTUBE_ICON + '</a>';
+            li.querySelector(".t").textContent = h.title;
+            li.querySelector(".a").textContent = h.artist;
+            li.querySelector(".m").textContent = h.station + " · " + new Date(h.time).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit" }) + " Uhr";
+            li.querySelector(".sp").href = "https://open.spotify.com/search/" + q;
+            li.querySelector(".yt").href = "https://www.youtube.com/results?search_query=" + q;
+            ul.appendChild(li);
+          }
 }
 $("historyBtn").addEventListener("click", () => { renderHistory(); openSheet(historySheet); });
 document.querySelector(".now").addEventListener("click", () => { renderHistory(); openSheet(historySheet); });
@@ -2268,26 +2277,26 @@ $("histClear").addEventListener("click", () => { if (confirm("Verlauf löschen?"
 /* Einschlaf-Timer: blendet am Ende über 10 Sekunden aus (wo die Lautstärke regelbar ist) und stoppt */
 const sleep = { end: 0, tick: 0, minutes: 0 };
 function setSleep(minutes) {
-  clearInterval(sleep.tick);
-  sleep.minutes = minutes; sleep.end = minutes ? Date.now() + minutes * 60000 : 0;
-  document.querySelectorAll("#sleepChips button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.min === minutes && minutes > 0));
-  if (minutes) sleep.tick = setInterval(sleepTick, 1000);
-  sleepTick();
+          clearInterval(sleep.tick);
+          sleep.minutes = minutes; sleep.end = minutes ? Date.now() + minutes * 60000 : 0;
+          document.querySelectorAll("#sleepChips button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.min === minutes && minutes > 0));
+          if (minutes) sleep.tick = setInterval(sleepTick, 1000);
+          sleepTick();
 }
 function sleepTick() {
-  const badge = $("sleepBadge"), info = $("sleepInfo");
-  if (!sleep.end) {
-    badge.hidden = true;
-    info.textContent = "Die Musik wird nach der gewählten Zeit leise ausgeblendet und gestoppt.";
-    if (!volumeLocked) audio.volume = volumeEl.value / 100;
-    return;
-  }
-  const left = sleep.end - Date.now(), mins = Math.ceil(left / 60000);
-  badge.hidden = false;
-  badge.textContent = "☾ " + (left > 60000 ? mins + " min" : Math.max(0, Math.ceil(left / 1000)) + " s");
-  info.textContent = "Die Musik stoppt um " + new Date(sleep.end).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr.";
-  if (!volumeLocked && left < 10000) audio.volume = Math.max(0, left / 10000) * volumeEl.value / 100;
-  if (left <= 0) { if (!audio.paused) stop(); setStatus("Einschlaf-Timer abgelaufen – gute Nacht"); setSleep(0); }
+          const badge = $("sleepBadge"), info = $("sleepInfo");
+          if (!sleep.end) {
+            badge.hidden = true;
+            info.textContent = "Die Musik wird nach der gewählten Zeit leise ausgeblendet und gestoppt.";
+            if (!volumeLocked) audio.volume = volumeEl.value / 100;
+            return;
+          }
+          const left = sleep.end - Date.now(), mins = Math.ceil(left / 60000);
+          badge.hidden = false;
+          badge.textContent = "☾ " + (left > 60000 ? mins + " min" : Math.max(0, Math.ceil(left / 1000)) + " s");
+          info.textContent = "Die Musik stoppt um " + new Date(sleep.end).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr.";
+          if (!volumeLocked && left < 10000) audio.volume = Math.max(0, left / 10000) * volumeEl.value / 100;
+          if (left <= 0) { if (!audio.paused) stop(); setStatus("Einschlaf-Timer abgelaufen – gute Nacht"); setSleep(0); }
 }
 document.querySelectorAll("#sleepChips button").forEach(b => b.addEventListener("click", () => setSleep(+b.dataset.min)));
 $("sleepBadge").addEventListener("click", () => { showMetaDiag(); prepareAddForm(); openSheet(sheet); });
@@ -2295,41 +2304,41 @@ $("sleepBadge").addEventListener("click", () => { showMetaDiag(); prepareAddForm
 /* Sichern & Wiederherstellen: eigene Sender, Favoriten, Verlauf und Einstellungen als JSON-Datei */
 function setBackupStatus(text, kind) { const el = $("backupStatus"); el.textContent = text; el.className = "add-status" + (kind ? " " + kind : ""); }
 $("backupSave").addEventListener("click", () => {
-  const data = { app: "DWH Jukebox Web", format: 1, version: APP_VERSION, created: new Date().toISOString(),
-    own: ownStations(), favorites: favRefs, history: getHistory(), theme: themeMode, volume: STORE.get("volume", 80), genre: STORE.get("genre", ALL) };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "Jukebox-Sicherung-" + new Date().toLocaleDateString("sv-SE") + ".json";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  setBackupStatus("Sicherung erstellt: " + data.own.length + " eigene Sender, " + data.favorites.length + " Favoriten.", "ok");
+          const data = { app: "DWH Jukebox Web", format: 1, version: APP_VERSION, created: new Date().toISOString(),
+            own: ownStations(), favorites: favRefs, history: getHistory(), theme: themeMode, volume: STORE.get("volume", 80), genre: STORE.get("genre", ALL) };
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "Jukebox-Sicherung-" + new Date().toLocaleDateString("sv-SE") + ".json";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+          setBackupStatus("Sicherung erstellt: " + data.own.length + " eigene Sender, " + data.favorites.length + " Favoriten.", "ok");
 });
 $("backupLoad").addEventListener("click", () => $("backupFile").click());
 $("backupFile").addEventListener("change", async () => {
-  const file = $("backupFile").files[0];
-  $("backupFile").value = "";
-  if (!file) return;
-  let data;
-  try { data = JSON.parse((await file.text()).replace(/^\uFEFF/, "")); } catch { setBackupStatus("Die Datei ist keine gültige Sicherung.", "err"); return; }
-  if (!data || data.app !== "DWH Jukebox Web") { setBackupStatus("Die Datei ist keine Jukebox-Sicherung.", "err"); return; }
-  let addedOwn = 0, addedFav = 0;
-  const own = ownStations(), keys = new Set([...STATIONS.map(s => s.Key), ...own.map(o => normalizeUrl(String(o.URL)))]);
-  for (const o of [].concat(data.own || [])) {
-    if (!o || !o.Name || !/^https?:\/\//i.test(String(o.URL || "")) || keys.has(normalizeUrl(String(o.URL)))) continue;
-    own.push({ ID: String([...own, ...BASE_STATIONS].reduce((m, s) => Math.max(m, parseInt(s.ID, 10) || 0), 1000) + 1), Name: String(o.Name), Genre: String(o.Genre || "Sonstiges"), URL: String(o.URL) });
-    keys.add(normalizeUrl(String(o.URL))); addedOwn++;
-  }
-  STORE.set("own", own);
-  for (const r of [].concat(data.favorites || [])) {
-    if (!r || !(r.u || r.n) || favRefs.some(f => (r.u && f.u === r.u) || sameName(f.n, r.n))) continue;
-    favRefs.push({ u: r.u, n: r.n }); addedFav++;
-  }
-  STORE.set("favs2", favRefs);
-  if (Array.isArray(data.history) && getHistory().length === 0) STORE.set("history", data.history.slice(0, HISTORY_MAX));
-  if (data.theme && (FX_THEMES[data.theme] || ["auto", "light", "dark"].includes(data.theme))) { themeMode = data.theme; STORE.set("theme", themeMode); applyTheme(); }
-  refreshStations(); prepareAddForm();
-  setBackupStatus("Wiederhergestellt: " + addedOwn + " eigene Sender und " + addedFav + " Favoriten neu übernommen.", "ok");
+          const file = $("backupFile").files[0];
+          $("backupFile").value = "";
+          if (!file) return;
+          let data;
+          try { data = JSON.parse((await file.text()).replace(/^\uFEFF/, "")); } catch { setBackupStatus("Die Datei ist keine gültige Sicherung.", "err"); return; }
+          if (!data || data.app !== "DWH Jukebox Web") { setBackupStatus("Die Datei ist keine Jukebox-Sicherung.", "err"); return; }
+          let addedOwn = 0, addedFav = 0;
+          const own = ownStations(), keys = new Set([...STATIONS.map(s => s.Key), ...own.map(o => normalizeUrl(String(o.URL)))]);
+          for (const o of [].concat(data.own || [])) {
+            if (!o || !o.Name || !/^https?:\/\//i.test(String(o.URL || "")) || keys.has(normalizeUrl(String(o.URL)))) continue;
+            own.push({ ID: String([...own, ...BASE_STATIONS].reduce((m, s) => Math.max(m, parseInt(s.ID, 10) || 0), 1000) + 1), Name: String(o.Name), Genre: String(o.Genre || "Sonstiges"), URL: String(o.URL) });
+            keys.add(normalizeUrl(String(o.URL))); addedOwn++;
+          }
+          STORE.set("own", own);
+          for (const r of [].concat(data.favorites || [])) {
+            if (!r || !(r.u || r.n) || favRefs.some(f => (r.u && f.u === r.u) || sameName(f.n, r.n))) continue;
+            favRefs.push({ u: r.u, n: r.n }); addedFav++;
+          }
+          STORE.set("favs2", favRefs);
+          if (Array.isArray(data.history) && getHistory().length === 0) STORE.set("history", data.history.slice(0, HISTORY_MAX));
+          if (data.theme && (FX_THEMES[data.theme] || ["auto", "light", "dark"].includes(data.theme))) { themeMode = data.theme; STORE.set("theme", themeMode); applyTheme(); }
+          refreshStations(); prepareAddForm();
+          setBackupStatus("Wiederhergestellt: " + addedOwn + " eigene Sender und " + addedFav + " Favoriten neu übernommen.", "ok");
 });
 backdrop.addEventListener("click", () => toggleSheet(false));
 
@@ -2338,25 +2347,25 @@ searchEl.addEventListener("input", renderList);
 /* Start: Senderliste laden, letzten Sender vorauswählen (abspielen erst nach Tipp) */
 function setVersion() { $("version").textContent = APP_NAME + " Player " + APP_VERSION + " · " + STATIONS.length + " Sender"; }
 function loadStations() {
-  fetch("radiostation.json", { cache: "no-cache" })
-    .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
-    .then(text => {
-      const list = normalizeStations(JSON.parse(text.replace(/^\uFEFF/, "")));
-      if (list.length === 0) throw new Error("Leere Liste");
-      BASE_STATIONS = list;
-      buildStations();
-      const last = current ? STATIONS.find(s => s.ID === current.ID) : findLast();
-      if (last && !current) { selectStation(last); setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
-      else if (last) current = last;
-      setVersion();
-      renderChips();
-      renderList();
-      updatePlayButton();
-    })
-    .catch(() => {
-      listEl.innerHTML = '<li class="empty">Senderliste konnte nicht geladen werden.<br><button id="retryBtn">Erneut versuchen</button></li>';
-      $("retryBtn").addEventListener("click", loadStations);
-    });
+          fetch("radiostation.json", { cache: "no-cache" })
+            .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
+            .then(text => {
+              const list = normalizeStations(JSON.parse(text.replace(/^\uFEFF/, "")));
+              if (list.length === 0) throw new Error("Leere Liste");
+              BASE_STATIONS = list;
+              buildStations();
+              const last = current ? STATIONS.find(s => s.ID === current.ID) : findLast();
+              if (last && !current) { selectStation(last); setStatus("Zuletzt gehört – ▶ zum Abspielen"); }
+              else if (last) current = last;
+              setVersion();
+              renderChips();
+              renderList();
+              updatePlayButton();
+            })
+            .catch(() => {
+              listEl.innerHTML = '<li class="empty">Senderliste konnte nicht geladen werden.<br><button id="retryBtn">Erneut versuchen</button></li>';
+              $("retryBtn").addEventListener("click", loadStations);
+            });
 }
 setVersion();
 updatePlayButton();
