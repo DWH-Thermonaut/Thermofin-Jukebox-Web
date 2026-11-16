@@ -518,7 +518,7 @@
         /* Handys (nicht Tablets): Wiedergabeleiste tiefer, nur so viel Abstand nach unten, dass der Home-Balken frei bleibt */
         @media (pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px) {
             .player {
-                padding-bottom: max(6px, calc(env(safe-area-inset-bottom) - 20px));
+                padding-bottom: max(12px, calc(env(safe-area-inset-bottom) - 14px));
             }
 
             main {
@@ -1597,7 +1597,7 @@
     <audio id="audio" preload="none" x-webkit-airplay="allow"></audio>
 
     <script>
-const APP_VERSION = "1.10.2";
+const APP_VERSION = "1.10.3";
 const APP_NAME = "DWH’s Jukebox";
 /* Adresse des eigenen Titel-Dienstes (Cloudflare Worker, siehe titel-dienst/worker.js), leer = nur direkte Abfrage */
 const TITLE_SERVICE = "https://jukebox-titel.ronny-herold-c5a.workers.dev/";
